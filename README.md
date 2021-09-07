@@ -43,6 +43,10 @@ couple higher-level input abstractions.
 	l.Listen()
 ```
 
+## Use on Linux
+
+Run `modprobe cdc_ether` before plugging in the Loupedeck live.
+
 ## Disclaimer
 
 This is not an official Google project.

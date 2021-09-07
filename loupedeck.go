@@ -33,11 +33,11 @@ import (
 	"github.com/gorilla/websocket"
 	"golang.org/x/image/font"
 	"golang.org/x/image/font/opentype"
+	"golang.org/x/image/font/gofont/goregular"
 	"golang.org/x/image/math/fixed"
 	"image"
 	"image/color"
 	"image/draw"
-	"io/ioutil"
 	"log"
 	"maze.io/x/pixel/pixelcolor"
 	"sync"
@@ -187,18 +187,13 @@ func (l *Loupedeck) TextInBox(x, y int, s string, fg, bg color.Color) (image.Ima
 
 // Function SetDefaultFont sets the default font for drawing onto buttons.
 //
-// TODO(laird): fix this so it finds a reasonable default font, as the
-// path provided isn't a default font on any system.
+// TODO(laird): Actually make it easy to override this default.
 func (l *Loupedeck) SetDefaultFont() error {
-	tt, err := ioutil.ReadFile("/Library/Fonts/GoogleSans-Regular.ttf")
+	f, err := opentype.Parse(goregular.TTF)
 	if err != nil {
 		return err
 	}
-
-	l.font, err = opentype.Parse(tt)
-	if err != nil {
-		return err
-	}
+	l.font = f
 
 	l.face, err = opentype.NewFace(l.font, &opentype.FaceOptions{
 		Size: 12,
