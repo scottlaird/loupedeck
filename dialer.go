@@ -1,15 +1,15 @@
 /*
-*/
+ */
 package loupedeck
 
 import (
 	//"github.com/tarm/serial"
+	"fmt"
 	"go.bug.st/serial"
 	"go.bug.st/serial/enumerator"
-	"net"
-	"fmt"
-	"time"
 	"log/slog"
+	"net"
+	"time"
 )
 
 // The Gorilla websockets library can use an external dialer
@@ -35,7 +35,7 @@ func (l *SerialWebSockConn) Write(b []byte) (n int, err error) {
 }
 
 func (l *SerialWebSockConn) Close() error {
-	return  nil // l.Port.Close()
+	return nil // l.Port.Close()
 }
 
 func (l *SerialWebSockConn) LocalAddr() net.Addr {
@@ -57,7 +57,7 @@ func (l *SerialWebSockConn) SetWriteDeadline(t time.Time) error {
 
 func ConnectSerialAuto() (*SerialWebSockConn, error) {
 	slog.Info("Enumerating ports")
-	
+
 	ports, err := enumerator.GetDetailedPortsList()
 	if err != nil {
 		return nil, err
@@ -68,7 +68,7 @@ func ConnectSerialAuto() (*SerialWebSockConn, error) {
 
 	for _, port := range ports {
 		slog.Info("Trying to open port", "port", port.Name)
-		if port.IsUSB && (port.VID == "2ec2" || port.VID=="1532") {
+		if port.IsUSB && (port.VID == "2ec2" || port.VID == "1532") {
 			p, err := serial.Open(port.Name, &serial.Mode{})
 			if err != nil {
 				return nil, fmt.Errorf("Unable to open port %q", port.Name)
@@ -78,7 +78,7 @@ func ConnectSerialAuto() (*SerialWebSockConn, error) {
 				Port: p,
 			}
 			slog.Info("Port good, continuing")
-			
+
 			return conn, nil
 		}
 	}
@@ -95,6 +95,6 @@ func ConnectSerialPath(serialPath string) (*SerialWebSockConn, error) {
 		Name: serialPath,
 		Port: p,
 	}
-	
+
 	return conn, nil
 }

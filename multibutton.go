@@ -28,10 +28,10 @@ import (
 type MultiButton struct {
 	loupedeck *Loupedeck
 	display   Display
-	images []image.Image
-	values []int
-	value  *WatchedInt
-	x, y   int
+	images    []image.Image
+	values    []int
+	value     *WatchedInt
+	x, y      int
 }
 
 // Function TouchToXY turns a specific TouchButton into a set of x,y +

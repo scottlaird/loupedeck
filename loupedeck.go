@@ -42,8 +42,8 @@ import (
 	"maze.io/x/pixel/pixelcolor"
 	"net"
 	"net/http"
-	"time"
 	"sync"
+	"time"
 )
 
 // Type Header is a uint16 used to identify various commands and
@@ -118,9 +118,8 @@ func ConnectPath(serialPath string) (*Loupedeck, error) {
 	return tryConnect(c)
 }
 
-
 type connectResult struct {
-	l *Loupedeck
+	l   *Loupedeck
 	err error
 }
 
@@ -147,7 +146,7 @@ func tryConnect(c *SerialWebSockConn) (*Loupedeck, error) {
 	}()
 
 	select {
-	case <-time.After(2*time.Second):
+	case <-time.After(2 * time.Second):
 		// timeout
 		slog.Info("Timeout! Trying again without timeout.")
 		return doConnect(c)
@@ -167,7 +166,7 @@ func doConnect(c *SerialWebSockConn) (*Loupedeck, error) {
 	}
 
 	header := http.Header{}
-	
+
 	slog.Info("Attempting to open websocket connection")
 	conn, resp, err := dialer.Dial("ws://fake", header)
 

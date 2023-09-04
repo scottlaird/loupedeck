@@ -17,8 +17,8 @@
 package loupedeck_test
 
 import (
-	"github.com/scottlaird/loupedeck"
 	"fmt"
+	"github.com/scottlaird/loupedeck"
 )
 
 func Example() {
@@ -28,20 +28,20 @@ func Example() {
 	}
 
 	light1 := loupedeck.NewWatchedInt(0)
-	light1.AddWatcher(func (i int) { fmt.Printf("DMX 1->%d\n", i) })
+	light1.AddWatcher(func(i int) { fmt.Printf("DMX 1->%d\n", i) })
 	light2 := loupedeck.NewWatchedInt(0)
-	light2.AddWatcher(func (i int) { fmt.Printf("DMX 3->%d\n", i) })
+	light2.AddWatcher(func(i int) { fmt.Printf("DMX 3->%d\n", i) })
 	light3 := loupedeck.NewWatchedInt(0)
-	light3.AddWatcher(func (i int) { fmt.Printf("DMX 5->%d\n", i) })
-	
+	light3.AddWatcher(func(i int) { fmt.Printf("DMX 5->%d\n", i) })
+
 	l.NewTouchDial(loupedeck.DisplayLeft, light1, light2, light3, 0, 100)
-	
+
 	// Define the 'Circle' button (bottom left) to function as an "off" button.
-	l.BindButton(loupedeck.Circle, func (b loupedeck.Button, s loupedeck.ButtonStatus){
+	l.BindButton(loupedeck.Circle, func(b loupedeck.Button, s loupedeck.ButtonStatus) {
 		light1.Set(0)
 		light2.Set(0)
 		light3.Set(0)
 	})
-		
+
 	l.Listen()
 }

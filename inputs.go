@@ -95,10 +95,10 @@ const (
 // TouchButton events, similar to ButtonFunc and KnobFunc.  The
 // parameters are:
 //
-//  - The TouchButton touched
-//  - The ButtonStatus (down/up)
-//  - The X location touched (relative to the whole display)
-//  - The Y location touched (relative to the whole display)
+//   - The TouchButton touched
+//   - The ButtonStatus (down/up)
+//   - The X location touched (relative to the whole display)
+//   - The Y location touched (relative to the whole display)
 type TouchFunc func(TouchButton, ButtonStatus, uint16, uint16)
 
 // Function touchCoordToButton translates an x,y coordinate on the
