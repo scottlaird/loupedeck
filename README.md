@@ -1,13 +1,18 @@
 # loupedeck
 
 This provides somewhat minimal support for talking to a [Loupedeck
-Live](https://loupedeck.com/us/products/loupedeck-live/) from Go.  Supported features:
+Live](https://loupedeck.com/us/products/loupedeck-live/) from Go.
+Supported features:
 
 - Reacting to button, knob, and touchscreen events.
 - Displaying images on any of the 3 displays.
 
 In addition, widgets and convienence functions are provided for a
 couple higher-level input abstractions.
+
+This largely only needs access to serial ports to run, and it uses
+`github.com/tarm/serial`, which claims to have Linux, Windows, and Mac
+support, although this is mostly untested.
 
 ## Sample code
 

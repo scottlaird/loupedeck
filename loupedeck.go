@@ -17,10 +17,10 @@
 // Package loupedeck provides a Go interface for talking to a
 // Loupedeck Live control surface.
 //
-// The Loupedeck Live appears as a USB network device, and we need to
-// talk to it via websockets.  The address is currently provided by
-// the caller but this should be changed to support auto-detecting
-// Loupedecks at various IPs.
+// The Loupedeck Live with firmware 1.x appeared as a USB network
+// device that we talked to via HTTP+websockets, but newer firmware
+// looks like a serial device that talks a mutant version of the
+// Websocket protocol.
 //
 // See https://github.com/foxxyz/loupedeck for Javascript code for
 // talking to the Loupedeck Live; it supports more of the Loupedeck's
@@ -32,14 +32,17 @@ import (
 	"fmt"
 	"github.com/gorilla/websocket"
 	"golang.org/x/image/font"
-	"golang.org/x/image/font/opentype"
 	"golang.org/x/image/font/gofont/goregular"
+	"golang.org/x/image/font/opentype"
 	"golang.org/x/image/math/fixed"
 	"image"
 	"image/color"
 	"image/draw"
-	"log"
+	"log/slog"
 	"maze.io/x/pixel/pixelcolor"
+	"net"
+	"net/http"
+	"time"
 	"sync"
 )
 
@@ -81,8 +84,8 @@ type Loupedeck struct {
 	font             *opentype.Font
 	face             font.Face
 	fontdrawer       *font.Drawer
-	url              string
-	ws               *websocket.Conn
+	serial           *SerialWebSockConn
+	conn             *websocket.Conn
 	buttonBindings   map[Button]ButtonFunc
 	buttonUpBindings map[Button]ButtonFunc
 	knobBindings     map[Knob]KnobFunc
@@ -92,16 +95,91 @@ type Loupedeck struct {
 	transactionMutex sync.Mutex
 }
 
-// Function Connect connects to a Loupedeck Live at a specified URL.  If successful it returns a new Loupedeck.
-func Connect(url string) (*Loupedeck, error) {
-	ws, _, err := websocket.DefaultDialer.Dial(url, nil)
+// Function ConnectAuto connects to a Loupedeck Live by automatically
+// locating the first USB Loupedeck device in the system.  If you have
+// more than one device and want to connect to a specific one, then
+// use ConnectPath().
+func ConnectAuto() (*Loupedeck, error) {
+	c, err := ConnectSerialAuto()
 	if err != nil {
 		return nil, err
 	}
 
+	return tryConnect(c)
+}
+
+// Function ConnectPath connects to a Loupedeck Live via a specified serial device.  If successful it returns a new Loupedeck.
+func ConnectPath(serialPath string) (*Loupedeck, error) {
+	c, err := ConnectSerialPath(serialPath)
+	if err != nil {
+		return nil, err
+	}
+
+	return tryConnect(c)
+}
+
+
+type connectResult struct {
+	l *Loupedeck
+	err error
+}
+
+// function tryConnect helps make connections to USB devices more
+// reliable by adding timeout and retry logic.
+//
+// Without this, 50% of the time my LoupeDeck fails to connect the
+// HTTP link for the websocket.  We send the HTTP headers to request a
+// websocket connection, but the LoupeDeck never returns.
+//
+// This is a painful workaround for that.  It uses the generic Go
+// pattern for implementing a timeout (do the "real work" in a
+// goroutine, feeding answers to a channel, and then add a timeout on
+// select).  If the timeout triggers, then it tries a second time to
+// connect.  This has a 100% success rate for me.
+//
+// The actual connection logic is all in doConnect(), below.
+func tryConnect(c *SerialWebSockConn) (*Loupedeck, error) {
+	result := make(chan connectResult, 1)
+	go func() {
+		r := connectResult{}
+		r.l, r.err = doConnect(c)
+		result <- r
+	}()
+
+	select {
+	case <-time.After(2*time.Second):
+		// timeout
+		slog.Info("Timeout! Trying again without timeout.")
+		return doConnect(c)
+
+	case result := <-result:
+		return result.l, result.err
+	}
+}
+
+func doConnect(c *SerialWebSockConn) (*Loupedeck, error) {
+	dialer := websocket.Dialer{
+		NetDial: func(network, addr string) (net.Conn, error) {
+			slog.Info("Dialing...")
+			return c, nil
+		},
+		HandshakeTimeout: 1 * time.Second,
+	}
+
+	header := http.Header{}
+	
+	slog.Info("Attempting to open websocket connection")
+	conn, resp, err := dialer.Dial("ws://fake", header)
+
+	if err != nil {
+		slog.Warn("dial failed", "err", err)
+		return nil, err
+	}
+
+	slog.Info("Connect successful", "resp", resp)
+
 	l := &Loupedeck{
-		url:              url,
-		ws:               ws,
+		conn:             conn,
 		buttonBindings:   make(map[Button]ButtonFunc),
 		buttonUpBindings: make(map[Button]ButtonFunc),
 		knobBindings:     make(map[Knob]KnobFunc),
@@ -111,6 +189,11 @@ func Connect(url string) (*Loupedeck, error) {
 	l.SetDefaultFont()
 
 	return l, nil
+}
+
+func (l *Loupedeck) Close() {
+	l.conn.Close()
+	l.serial.Close()
 }
 
 // Function Height returns the height (in pixels) of the Loupedeck's displays.
@@ -214,10 +297,12 @@ func (l *Loupedeck) SetDefaultFont() error {
 // callbacks as configured.
 func (l *Loupedeck) Listen() {
 	for {
-		_, message, err := l.ws.ReadMessage()
+		_, message, err := l.conn.ReadMessage()
+
 		if err != nil {
-			log.Printf("Read error: %v", err)
+			slog.Warn("Read error", "error", err)
 		}
+		slog.Debug("Read", "message", message)
 
 		header := Header(binary.BigEndian.Uint16(message[0:]))
 
@@ -240,7 +325,7 @@ func (l *Loupedeck) Listen() {
 			} else if upDown == ButtonUp && l.buttonUpBindings[button] != nil {
 				l.buttonUpBindings[button](button, upDown)
 			} else {
-				//log.Printf("Received uncaught button press message %x / %x: %x\n", button, upDown, message)
+				slog.Info("Received uncaught button press message", "button", button, "upDown", upDown, "message", message)
 			}
 		case KnobRotate:
 			knob := Knob(binary.BigEndian.Uint16(message[2:]))
@@ -252,35 +337,36 @@ func (l *Loupedeck) Listen() {
 				}
 				l.knobBindings[knob](knob, v)
 			} else {
-				//log.Printf("Received knob rotate message %x / %x: %x\n", knob, value, message)
+				slog.Debug("Received knob rotate message", "knob", knob, "value", value, "message", message)
 			}
 		case Touch:
 			x := binary.BigEndian.Uint16(message[4:])
 			y := binary.BigEndian.Uint16(message[6:])
-			//id := message[8]  // Not sure what this is for
+			id := message[8] // Not sure what this is for
 			b := touchCoordToButton(x, y)
 
 			if l.touchBindings[b] != nil {
 				l.touchBindings[b](b, ButtonDown, x, y)
 			} else {
-				//log.Printf("Received touch message (%d, %d) %x = %d: %x\n", x, y, id, b, message)
+				slog.Debug("Received touch message", "x", x, "y", y, "id", id, "b", b, "message", message)
 			}
 		case TouchEnd:
 			x := binary.BigEndian.Uint16(message[4:])
 			y := binary.BigEndian.Uint16(message[6:])
-			//id := message[8]  // Not sure what this is for
+			id := message[8] // Not sure what this is for
 			b := touchCoordToButton(x, y)
 
 			if l.touchUpBindings[b] != nil {
 				l.touchUpBindings[b](b, ButtonUp, x, y)
 			} else {
-				//log.Printf("Received touch end message (%d, %d) %x = %d: %x\n", x, y, id, b, message)
+				slog.Debug("Received touch end message", "x", x, "y", y, "id", id, "b", b, "message", message)
 			}
 		default:
-			log.Printf("Received unknown message (%x): %x\n", header, message)
+			slog.Info("Received unknown message", "header", header, "message", message)
 		}
 	}
 }
+
 // Function newTransactionId picks the next 8-bit transaction ID
 // number.  This is used as part of the Loupedeck protocol and used to
 // match results with specific queries.  The transaction ID
@@ -306,8 +392,15 @@ func (l *Loupedeck) sendMessage(h Header, data []byte) error {
 	b[2] = byte(t)
 	b = append(b, data...)
 
-	//log.Printf("Sendmessage (%d) %#v\n", len(b), b)
-	l.ws.WriteMessage(websocket.BinaryMessage, b)
+	/*
+		if len(b) > 32 {
+			log.Printf("Sendmessage (%d) %#v...\n", len(b), b[0:32])
+		} else {
+			log.Printf("Sendmessage (%d) %#v\n", len(b), b)
+		}
+	*/
+
+	l.conn.WriteMessage(websocket.BinaryMessage, b)
 
 	return nil
 }
