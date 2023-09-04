@@ -14,6 +14,10 @@ This largely only needs access to serial ports to run, and it uses
 `github.com/tarm/serial`, which claims to have Linux, Windows, and Mac
 support, although this is mostly untested.
 
+This is only tested with a Loupedeck Live; other Loupedeck models use
+the same protocol but have different numbers of displays and controls,
+and will need minor updates to work correctly.
+
 ## Sample code
 
 ```
@@ -47,10 +51,6 @@ support, although this is mostly untested.
 		
 	l.Listen()
 ```
-
-## Use on Linux
-
-Run `modprobe cdc_ether` before plugging in the Loupedeck live.
 
 ## Disclaimer
 
