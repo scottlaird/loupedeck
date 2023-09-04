@@ -10,9 +10,15 @@ Supported features:
 In addition, widgets and convienence functions are provided for a
 couple higher-level input abstractions.
 
-This largely only needs access to serial ports to run, and it uses
-`github.com/tarm/serial`, which claims to have Linux, Windows, and Mac
-support, although this is mostly untested.
+This code talks *directly* to the Loupedeck hardware, and doesn't go
+through Loupedeck's Windows/Mac software.  It's largely intended for
+using the Loupedeck as a controller for semi-embedded devices, like a
+DMX lighting controller.  This code *should* work under
+Linux/Windows/Mac/etc, although only Linux on a Raspberry Pi has been
+tested.  It talks to the Loupedeck via the
+[`go.bug.st/serial`](http://go.bug.st/serial) library ; any platform
+with working USB serial support in the library will likely work just
+fine.
 
 This is only tested with a Loupedeck Live; other Loupedeck models use
 the same protocol but have different numbers of displays and controls,
@@ -21,11 +27,10 @@ and will need minor updates to work correctly.
 ## Sample code
 
 ```
-	l, err := loupedeck.Connect("ws://100.127.1.1")
-	if err != nil {
-		panic(err)
-	}
+	l, err := loupedeck.ConnectAuto()
+	if err != nil { ... }
 
+	// Create 3 variables for holding dial positions, and add a callback for whenever they change.
 	light1 := loupedeck.NewWatchedInt(0)
 	light1.AddWatcher(func (i int) { fmt.Printf("DMX 1->%d\n", i) })
 	light2 := loupedeck.NewWatchedInt(0)
