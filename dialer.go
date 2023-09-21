@@ -23,14 +23,14 @@ type SerialWebSockConn struct {
 }
 
 func (l *SerialWebSockConn) Read(b []byte) (n int, err error) {
-	slog.Info("Reading", "limit_bytes", len(b))
+	//slog.Info("Reading", "limit_bytes", len(b))
 	n, err = l.Port.Read(b)
-	slog.Info("Read", "bytes", n, "err", err)
+	//slog.Info("Read", "bytes", n, "err", err)
 	return n, err
 }
 
 func (l *SerialWebSockConn) Write(b []byte) (n int, err error) {
-	slog.Info("Writing", "bytes", len(b), "message", b)
+	//slog.Info("Writing", "bytes", len(b), "message", b)
 	return l.Port.Write(b)
 }
 
