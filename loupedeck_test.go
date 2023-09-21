@@ -22,7 +22,7 @@ import (
 )
 
 func Example() {
-	l, err := loupedeck.Connect("ws://100.127.5.1")
+	l, err := loupedeck.ConnectAuto()
 	if err != nil {
 		panic(err)
 	}
