@@ -48,25 +48,24 @@ import (
 
 // Type Header is a uint16 used to identify various commands and
 // actions needed for the Loupedeck protocol.
-type Header uint16
+type Header byte
 
+// See 'COMMANDS' in https://github.com/foxxyz/loupedeck/blob/master/constants.js
 const (
-	Confirm          Header = 0x0302
-	Tick                    = 0x0400
-	SetBrightness           = 0x0409
-	ConfirmFramebuff        = 0x0410
-	SetVibration            = 0x041b
-	ButtonPress             = 0x0500
-	KnobRotate              = 0x0501
-	Reset                   = 0x0506
-	Draw                    = 0x050f
-	SetColor                = 0x0702
-	Touch                   = 0x094d
-	TouchEnd                = 0x096d
-	Version                 = 0x0c07
-	MCU                     = 0x180d
-	Serial                  = 0x1f03
-	WriteFramebuff          = 0xff10
+	ButtonPress      Header = 0x00
+	KnobRotate              = 0x01
+	SetColor                = 0x02
+	Serial                  = 0x03
+	Reset                   = 0x06
+	Version                 = 0x07
+	SetBrightness           = 0x09
+	MCU                     = 0x0d
+	WriteFramebuff          = 0x10
+	Draw                    = 0x0f
+	ConfirmFramebuff        = 0x10
+	SetVibration            = 0x1b
+	Touch                   = 0x4d
+	TouchEnd                = 0x6d
 )
 
 // Type Display is part of the Loupedeck protocol, used to identify
@@ -74,9 +73,10 @@ const (
 type Display uint16
 
 const (
-	DisplayMain  Display = 'A'
-	DisplayLeft          = 'L'
-	DisplayRight         = 'R'
+	DisplayMain   Display = 'A'
+	DisplayLeft           = 'L'
+	DisplayRight          = 'R'
+	DisplayCTDial         = 'W'
 )
 
 // Type Loupedeck describes a Loupedeck device.
@@ -179,6 +179,7 @@ func doConnect(c *SerialWebSockConn) (*Loupedeck, error) {
 
 	l := &Loupedeck{
 		conn:             conn,
+		serial:           c,
 		buttonBindings:   make(map[Button]ButtonFunc),
 		buttonUpBindings: make(map[Button]ButtonFunc),
 		knobBindings:     make(map[Knob]KnobFunc),
@@ -296,26 +297,30 @@ func (l *Loupedeck) SetDefaultFont() error {
 // callbacks as configured.
 func (l *Loupedeck) Listen() {
 	for {
-		_, message, err := l.conn.ReadMessage()
+		msgtype, message, err := l.conn.ReadMessage()
 
 		if err != nil {
 			slog.Warn("Read error", "error", err)
 		}
-		slog.Debug("Read", "message", message)
+		slog.Info("Read", "message", fmt.Sprintf("%v", message), "type", msgtype, "bytes", len(message))
 
-		header := Header(binary.BigEndian.Uint16(message[0:]))
+		if len(message) == 0 {
+			slog.Warn("Received a 0-byte message.  Skipping")
+			continue
+		}
+
+		length := message[0]
+		header := Header(message[1])
+		slog.Info("Read data", "Len", length, "header", header)
 
 		switch header {
-		case Confirm:
+			// Status messages in response to previous commands?
+		case SetColor:
 		case SetBrightness:
 		case SetVibration:
 		case Draw:
-		case WriteFramebuff:
 		case ConfirmFramebuff:
-		case 0x40f: // Undefined
-		case 0x1c73: // Undefined
-		case 0x1f73: // Undefined
-			// nothing
+			
 		case ButtonPress:
 			button := Button(binary.BigEndian.Uint16(message[2:]))
 			upDown := ButtonStatus(message[4])
@@ -362,6 +367,7 @@ func (l *Loupedeck) Listen() {
 			}
 		default:
 			slog.Info("Received unknown message", "header", header, "message", message)
+
 		}
 	}
 }
@@ -375,7 +381,7 @@ func (l *Loupedeck) newTransactionId() uint8 {
 	t := l.transactionID
 	t++
 	if t == 0 {
-		t++
+		t = 1
 	}
 	l.transactionID = t
 	l.transactionMutex.Unlock()
@@ -385,22 +391,32 @@ func (l *Loupedeck) newTransactionId() uint8 {
 
 // Function sendMessage sends a formatted message to the Loupedeck.
 func (l *Loupedeck) sendMessage(h Header, data []byte) error {
-	t := l.newTransactionId()
-	b := make([]byte, 3)
-	binary.BigEndian.PutUint16(b[0:], uint16(h))
-	b[2] = byte(t)
+	transactionID := l.newTransactionId()
+	b := make([]byte, 3) // should probably add len(data) to make append() cheaper.
+
+	// The Loupedeck protocol only uses a single byte for lengths,
+	// but big images, etc, are larger than that.  Since the
+	// length field is only 8 bits, it uses 255 to mean "255 or
+	// larger".  Given that, I'm not sure why it has a length
+	// field at all, but whatever.
+	length := 3 + len(data)
+	if length > 255 {
+		length = 255
+	}
+
+	b[0] = byte(length)
+	b[1] = byte(h)
+	b[2] = byte(transactionID)
 	b = append(b, data...)
 
-	/*
-		if len(b) > 32 {
-			log.Printf("Sendmessage (%d) %#v...\n", len(b), b[0:32])
-		} else {
-			log.Printf("Sendmessage (%d) %#v\n", len(b), b)
-		}
-	*/
+	if len(b) > 32 {
+		slog.Info("Sendmessage", "header type", h, "len", len(b), "data", fmt.Sprintf("%v", b[0:32]))
+	} else {
+		slog.Info("Sendmessage", "header type", h, "len", len(b), "data", fmt.Sprintf("%v", b))
+	}
 
 	l.conn.WriteMessage(websocket.BinaryMessage, b)
-
+	//l.serial.Write(b)
 	return nil
 }
 
@@ -432,7 +448,14 @@ func (l *Loupedeck) SetButtonColor(b Button, c color.RGBA) {
 // Drawing subsets of a display is explicitly allowed; writing a 90x90
 // block of pixels to the main display will only overwrite one
 // button's worth of image, and will not touch other pixels.
+//
+// Most Loupedeck screens are little-endian, except for the knob
+// screen on the Loupedeck CT, which is big-endian.  This does not
+// deal with this case correctly yet.
 func (l *Loupedeck) Draw(displayid Display, im image.Image, xoff, yoff int) {
+	slog.Info("Draw called", "Display", displayid, "xoff", xoff, "yoff", yoff, "width", im.Bounds().Dx(), "height", im.Bounds().Dy())
+	littleEndian := true
+
 	// Call 'WriteFramebuff'
 	data := make([]byte, 10)
 	binary.BigEndian.PutUint16(data[0:], uint16(displayid))
@@ -446,14 +469,28 @@ func (l *Loupedeck) Draw(displayid Display, im image.Image, xoff, yoff int) {
 	for y := b.Min.Y; y < b.Max.Y; y++ {
 		for x := b.Min.X; x < b.Max.X; x++ {
 			pixel := pixelcolor.ToRGB565(im.At(x, y))
-			data = append(data, byte(pixel&0xff))
-			data = append(data, byte(pixel>>8))
+			lowByte := byte(pixel & 0xff)
+			highByte := byte(pixel >> 8)
+
+			if littleEndian {
+				data = append(data, lowByte, highByte)
+			} else {
+				data = append(data, highByte, lowByte)
+			}
+			//			data = append(data, byte(pixel&0xff))
+			//			data = append(data, byte(pixel>>8))
 		}
 	}
 
 	l.sendMessage(WriteFramebuff, data)
 
-	// Call 'Draw'
+	// Call 'Draw'.  The screen isn't actually updated until
+	// 'draw' arrives.  Unclear if we should wait for the previous
+	// Framebuffer transaction to complete first, but adding a
+	// giant sleep here doesn't seem to change anything.
+	//
+	// Ideally, we'd batch these and only call Draw when we're
+	// doing with multiple FB updates.
 	data2 := make([]byte, 2)
 	binary.BigEndian.PutUint16(data2[0:], uint16(displayid))
 	l.sendMessage(Draw, data2)

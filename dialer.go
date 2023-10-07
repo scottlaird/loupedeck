@@ -20,17 +20,18 @@ import (
 type SerialWebSockConn struct {
 	Name string
 	Port serial.Port
+	Vendor, Product string
 }
 
 func (l *SerialWebSockConn) Read(b []byte) (n int, err error) {
 	//slog.Info("Reading", "limit_bytes", len(b))
 	n, err = l.Port.Read(b)
-	//slog.Info("Read", "bytes", n, "err", err)
+	slog.Info("Read", "bytes", n, "err", err, "data", fmt.Sprintf("%v", b[:n]))
 	return n, err
 }
 
 func (l *SerialWebSockConn) Write(b []byte) (n int, err error) {
-	//slog.Info("Writing", "bytes", len(b), "message", b)
+	slog.Info("Writing", "bytes", len(b), "message", fmt.Sprintf("%v", b))
 	return l.Port.Write(b)
 }
 
@@ -76,6 +77,8 @@ func ConnectSerialAuto() (*SerialWebSockConn, error) {
 			conn := &SerialWebSockConn{
 				Name: port.Name,
 				Port: p,
+				Vendor: port.VID,
+				Product: port.PID,
 			}
 			slog.Info("Port good, continuing")
 
