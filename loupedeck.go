@@ -51,26 +51,34 @@ import (
 type Display uint16
 
 const (
-	DisplayMain   Display = 'L'
-	DisplayLeft           = 'M'
+	DisplayMain   Display = 'A'
+	DisplayLeft           = 'L'
 	DisplayRight          = 'R'
 	DisplayCTDial         = 'W'
 )
 
+type transactionCallback func(m *Message)
+
 // Type Loupedeck describes a Loupedeck device.
 type Loupedeck struct {
-	font             *opentype.Font
-	face             font.Face
-	fontdrawer       *font.Drawer
-	serial           *SerialWebSockConn
-	conn             *websocket.Conn
-	buttonBindings   map[Button]ButtonFunc
-	buttonUpBindings map[Button]ButtonFunc
-	knobBindings     map[Knob]KnobFunc
-	touchBindings    map[TouchButton]TouchFunc
-	touchUpBindings  map[TouchButton]TouchFunc
-	transactionID    uint8
-	transactionMutex sync.Mutex
+	Vendor               string
+	Product              string
+	Model                string
+	Version              string
+	SerialNo             string
+	font                 *opentype.Font
+	face                 font.Face
+	fontdrawer           *font.Drawer
+	serial               *SerialWebSockConn
+	conn                 *websocket.Conn
+	buttonBindings       map[Button]ButtonFunc
+	buttonUpBindings     map[Button]ButtonFunc
+	knobBindings         map[Knob]KnobFunc
+	touchBindings        map[TouchButton]TouchFunc
+	touchUpBindings      map[TouchButton]TouchFunc
+	transactionID        uint8
+	transactionMutex     sync.Mutex
+	transactionCallbacks map[byte]transactionCallback
 }
 
 // Function ConnectAuto connects to a Loupedeck Live by automatically
@@ -156,15 +164,42 @@ func doConnect(c *SerialWebSockConn) (*Loupedeck, error) {
 	slog.Info("Connect successful", "resp", resp)
 
 	l := &Loupedeck{
-		conn:             conn,
-		serial:           c,
-		buttonBindings:   make(map[Button]ButtonFunc),
-		buttonUpBindings: make(map[Button]ButtonFunc),
-		knobBindings:     make(map[Knob]KnobFunc),
-		touchBindings:    make(map[TouchButton]TouchFunc),
-		touchUpBindings:  make(map[TouchButton]TouchFunc),
+		conn:                 conn,
+		serial:               c,
+		buttonBindings:       make(map[Button]ButtonFunc),
+		buttonUpBindings:     make(map[Button]ButtonFunc),
+		knobBindings:         make(map[Knob]KnobFunc),
+		touchBindings:        make(map[TouchButton]TouchFunc),
+		touchUpBindings:      make(map[TouchButton]TouchFunc),
+		Vendor:               c.Vendor,
+		Product:              c.Product,
+		Model:                "foo",
+		transactionCallbacks: map[byte]transactionCallback{},
 	}
 	l.SetDefaultFont()
+
+	slog.Info("Found Loupedeck", "vendor", l.Vendor, "product", l.Product)
+
+	slog.Info("Sending reset.")
+	data := make([]byte, 0)
+	m := l.newMessage(Reset, data)
+	l.send(m)
+
+	// Ask the device about itself.  The responses come back
+	// asynchronously, so we need to provide a callback.  Since
+	// `listen()` hasn't been called yet, we *have* to use
+	// callbacks, blocking via 'sendAndWait' isn't going to work.
+	m = l.newMessage(Version, data)
+	l.sendWithCallback(m, func(m *Message) {
+		l.Version = fmt.Sprintf("%d.%d.%d", m.data[0], m.data[1], m.data[2])
+		slog.Info("Received 'Version' response", "version", l.Version)
+	})
+
+	m = l.newMessage(Serial, data)
+	l.sendWithCallback(m, func(m *Message) {
+		l.SerialNo = string(m.data)
+		slog.Info("Received 'Serial' response", "serial", l.SerialNo)
+	})
 
 	return l, nil
 }
@@ -224,20 +259,20 @@ func (l *Loupedeck) TextInBox(x, y int, s string, fg, bg color.Color) (image.Ima
 		fd.Face = face
 
 		bounds, _ := fd.BoundString(s)
-		fmt.Printf("Measured %q at %+v\n", s, bounds)
+		//fmt.Printf("Measured %q at %+v\n", s, bounds)
 		width := bounds.Max.X - bounds.Min.X
 		height := bounds.Max.Y - bounds.Min.Y
 
 		if width > mx26 || height > my26 {
 			size = size * 0.8
-			fmt.Printf("Reducing font size to %f\n", size)
+			//fmt.Printf("Reducing font size to %f\n", size)
 			continue
 		}
 
 		centerx := (x26 - width) / 2
 		centery := (y26-height)/2 - bounds.Min.Y
 
-		fmt.Printf("H: %v  H: %v  Center: %v/%v\n", height, width, centerx, centery)
+		//fmt.Printf("H: %v  H: %v  Center: %v/%v\n", height, width, centerx, centery)
 
 		fd.Dot = fixed.Point26_6{centerx, centery}
 		fd.DrawString(s)
@@ -306,7 +341,7 @@ func (l *Loupedeck) SetButtonColor(b Button, c color.RGBA) error {
 // screen on the Loupedeck CT, which is big-endian.  This does not
 // deal with this case correctly yet.
 func (l *Loupedeck) Draw(displayid Display, im image.Image, xoff, yoff int) {
-	slog.Info("Draw called", "Display", displayid, "xoff", xoff, "yoff", yoff, "width", im.Bounds().Dx(), "height", im.Bounds().Dy())
+	slog.Info("Draw called", "Display", string(displayid), "xoff", xoff, "yoff", yoff, "width", im.Bounds().Dx(), "height", im.Bounds().Dy())
 	littleEndian := true
 
 	// Call 'WriteFramebuff'
@@ -337,6 +372,11 @@ func (l *Loupedeck) Draw(displayid Display, im image.Image, xoff, yoff int) {
 
 	m := l.newMessage(WriteFramebuff, data)
 	l.send(m)
+
+	//resp, err := l.sendAndWait(m, 1*time.Second)
+	//if err != nil {
+	//slog.Warn("Received error on draw", "message", resp)
+	//}
 
 	// Call 'Draw'.  The screen isn't actually updated until
 	// 'draw' arrives.  Unclear if we should wait for the previous

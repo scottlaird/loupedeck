@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"github.com/gorilla/websocket"
 	"log/slog"
+	"time"
 )
 
 // Type MessageType is a uint16 used to identify various commands and
@@ -26,6 +27,7 @@ const (
 	SetVibration                 = 0x1b
 	Touch                        = 0x4d
 	TouchEnd                     = 0x6d
+	TouchEndCT                   = 0x72
 )
 
 type Message struct {
@@ -37,10 +39,10 @@ type Message struct {
 
 func (l *Loupedeck) newMessage(messageType MessageType, data []byte) *Message {
 	length := len(data) + 3
-	if length>255 {
+	if length > 255 {
 		length = 255
 	}
-	
+
 	m := Message{
 		transactionID: l.newTransactionID(),
 		messageType:   messageType,
@@ -53,10 +55,10 @@ func (l *Loupedeck) newMessage(messageType MessageType, data []byte) *Message {
 
 func (l *Loupedeck) parseMessage(b []byte) (*Message, error) {
 	m := Message{
-		length: b[0],
-		messageType: MessageType(b[1]),
+		length:        b[0],
+		messageType:   MessageType(b[1]),
 		transactionID: b[2],
-		data: b[3:],
+		data:          b[3:],
 	}
 	return &m, nil
 }
@@ -78,7 +80,7 @@ func (m *Message) String() string {
 	if len(d) > 8 {
 		d = d[0:8]
 	}
-	
+
 	return fmt.Sprintf("{len: %d, type: %02x, txn: %02x, data: %v}", m.length, m.messageType, m.transactionID, d)
 }
 
@@ -100,11 +102,38 @@ func (l *Loupedeck) newTransactionID() uint8 {
 }
 
 func (l *Loupedeck) send(m *Message) error {
-	slog.Info("Sending","message", m.String())
+	slog.Info("Sending", "message", m.String())
 	b := m.AsBytes()
 	l.conn.WriteMessage(websocket.BinaryMessage, b)
 
 	return nil
+}
+
+func (l *Loupedeck) sendWithCallback(m *Message, c transactionCallback) error {
+	slog.Info("Setting callback", "message", m.String())
+	l.transactionCallbacks[m.transactionID] = c
+
+	return l.send(m)
+}
+
+// function sendAndWait sends a message and then waits for a response, returning the response message.
+func (l *Loupedeck) sendAndWait(m *Message, timeout time.Duration) (resp *Message, err error) {
+	ch := make(chan *Message)
+	defer close(ch)
+	// TODO(scottlaird): actually implement the timeout.
+	l.sendWithCallback(m, func(m2 *Message) {
+		slog.Info("sendAndWait callback received, sending to channel")
+		ch <- m2
+	})
+
+	select {
+	case resp = <-ch:
+		slog.Info("sendAndWait received ok")
+		return resp, nil
+	case <-time.After(timeout):
+		slog.Warn("sendAndWait timeout")
+		return nil, fmt.Errorf("Timeout waiting for response")
+	}
 }
 
 // Function sendMessage sends a formatted message to the Loupedeck.

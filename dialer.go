@@ -18,8 +18,8 @@ import (
 // to provide something that matches the net.Conn interface.  Here's a
 // minimal implementation.
 type SerialWebSockConn struct {
-	Name string
-	Port serial.Port
+	Name            string
+	Port            serial.Port
 	Vendor, Product string
 }
 
@@ -75,13 +75,11 @@ func ConnectSerialAuto() (*SerialWebSockConn, error) {
 				return nil, fmt.Errorf("Unable to open port %q", port.Name)
 			}
 			conn := &SerialWebSockConn{
-				Name: port.Name,
-				Port: p,
-				Vendor: port.VID,
+				Name:    port.Name,
+				Port:    p,
+				Vendor:  port.VID,
 				Product: port.PID,
 			}
-			slog.Info("Found Loupedeck", "vendor", conn.Vendor, "product", conn.Product)
-
 			return conn, nil
 		}
 	}
