@@ -5,6 +5,7 @@ import (
 	"image"
 	"log/slog"
 	"maze.io/x/pixel/pixelcolor"
+//	"time"
 )
 
 // Type Display is part of the Loupedeck protocol, used to identify
@@ -41,7 +42,7 @@ func (l *Loupedeck) GetDisplay(name string) *Display {
 	return l.displays[name]
 }
 
-func (l *Loupedeck) addDisplay(name string, id byte, width, height, offsetx, offsety int) {
+func (l *Loupedeck) addDisplay(name string, id byte, width, height, offsetx, offsety int, bigEndian bool) {
 	d := &Display{
 		loupedeck: l,
 		Name:      name,
@@ -50,17 +51,40 @@ func (l *Loupedeck) addDisplay(name string, id byte, width, height, offsetx, off
 		height:    height,
 		offsetx:   offsetx,
 		offsety:   offsety,
-		bigEndian: false,
+		bigEndian: bigEndian,
 	}
 	l.displays[name] = d
 }
 
 func (l *Loupedeck) SetDisplays() {
-	l.addDisplay("left", 'L', 60, 270, 0, 0)
-	l.addDisplay("main", 'A', 360, 270, 0, 0)
-	l.addDisplay("right", 'R', 60, 270, 0, 0)
-	l.addDisplay("all", 'M', 480, 270, 0, 0)
-	l.addDisplay("dial", 'W', 240, 240, 0, 0)
+	switch l.Product {
+	case "0003":
+		slog.Info("Using Loupedeck CT v1 display settings.")
+		l.addDisplay("left", 'L', 60, 270, 0, 0, false)
+		l.addDisplay("main", 'A', 360, 270, 60, 0, false)
+		l.addDisplay("right", 'R', 60, 270, 420, 0, false)
+		l.addDisplay("dial", 'W', 240, 240, 0, 0, true)
+	case "0007":
+		slog.Info("Using Loupedeck CT v2 display settings.")
+		l.addDisplay("left", 'M', 60, 270, 0, 0, false)
+		l.addDisplay("main", 'M', 360, 270, 60, 0, false)
+		l.addDisplay("right", 'M', 60, 270, 420, 0, false)
+		l.addDisplay("all", 'M', 480, 270, 0, 0, false)  // Same as left+main+right
+		l.addDisplay("dial", 'W', 240, 240, 0, 0, true)
+	case "0004":
+		slog.Info("Using Loupedeck Live display settings.")
+		l.addDisplay("left", 'L', 60, 270, 0, 0, false)
+		l.addDisplay("main", 'A', 360, 270, 0, 0, false)
+		l.addDisplay("right", 'R', 60, 270, 0, 0, false)
+	case "0006", "0d06":
+		slog.Info("Using Loupedeck Live S/Razor Stream Controller display settings.")
+		l.addDisplay("left", 'M', 60, 270, 0, 0, false)
+		l.addDisplay("main", 'M', 360, 270, 60, 0, false)
+		l.addDisplay("right", 'M', 60, 270, 420, 0, false)
+		l.addDisplay("all", 'M', 480, 270, 0, 0, false)  // Same as left+main+right
+	default:
+		panic("Unknown device type: " + l.Product)  
+	}
 }
 
 // Function Height returns the height (in pixels) of the Loupedeck's displays.
@@ -85,15 +109,20 @@ func (d *Display) Width() int {
 // deal with this case correctly yet.
 func (d *Display) Draw(im image.Image, xoff, yoff int) {
 	slog.Info("Draw called", "Display", d.Name, "xoff", xoff, "yoff", yoff, "width", im.Bounds().Dx(), "height", im.Bounds().Dy())
-	littleEndian := true
+
+	x := xoff + d.offsetx
+	y := yoff + d.offsety
+	width := im.Bounds().Dx()
+	height := im.Bounds().Dy()
+	slog.Info("Draw parameters", "x", x, "y", y, "width", width, "height", height)
 
 	// Call 'WriteFramebuff'
 	data := make([]byte, 10)
 	binary.BigEndian.PutUint16(data[0:], uint16(d.id))
-	binary.BigEndian.PutUint16(data[2:], uint16(xoff))
-	binary.BigEndian.PutUint16(data[4:], uint16(yoff))
-	binary.BigEndian.PutUint16(data[6:], uint16(im.Bounds().Dx()))
-	binary.BigEndian.PutUint16(data[8:], uint16(im.Bounds().Dy()))
+	binary.BigEndian.PutUint16(data[2:], uint16(x))
+	binary.BigEndian.PutUint16(data[4:], uint16(y))
+	binary.BigEndian.PutUint16(data[6:], uint16(width))
+	binary.BigEndian.PutUint16(data[8:], uint16(height))
 
 	b := im.Bounds()
 
@@ -103,10 +132,13 @@ func (d *Display) Draw(im image.Image, xoff, yoff int) {
 			lowByte := byte(pixel & 0xff)
 			highByte := byte(pixel >> 8)
 
-			if littleEndian {
-				data = append(data, lowByte, highByte)
-			} else {
+			// The Loupedeck CT's center knob screen wants
+			// images fed to it big endian; all other
+			// displays are little endian.
+			if d.bigEndian {
 				data = append(data, highByte, lowByte)
+			} else {
+				data = append(data, lowByte, highByte)
 			}
 		}
 	}
@@ -114,9 +146,12 @@ func (d *Display) Draw(im image.Image, xoff, yoff int) {
 	m := d.loupedeck.NewMessage(WriteFramebuff, data)
 	d.loupedeck.Send(m)
 
-	//resp, err := l.sendAndWait(m, 1*time.Second)
+	// I'd love to watch the return code for WriteFramebuff, but
+	// it doesn't seem to come back until after Draw, below.
+	
+	//resp, err := d.loupedeck.SendAndWait(m, 50*time.Millisecond)
 	//if err != nil {
-	//slog.Warn("Received error on draw", "message", resp)
+	//	slog.Warn("Received error on draw", "message", resp)
 	//}
 
 	// Call 'Draw'.  The screen isn't actually updated until

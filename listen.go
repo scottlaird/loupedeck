@@ -2,7 +2,6 @@ package loupedeck
 
 import (
 	"encoding/binary"
-	"fmt"
 	"github.com/gorilla/websocket"
 	"log/slog"
 )
@@ -15,7 +14,9 @@ func (l *Loupedeck) Listen() {
 		websocketMsgType, message, err := l.conn.ReadMessage()
 
 		if err != nil {
-			slog.Warn("Read error", "error", err)
+			slog.Warn("Read error, exiting", "error", err)
+			// TODO(scottlaird): make this shut down cleanly.
+			panic("Websocket connection failed")
 		}
 
 		if len(message) == 0 {
@@ -40,18 +41,7 @@ func (l *Loupedeck) Listen() {
 
 			switch m.messageType {
 			// Status messages in response to previous commands?
-			case SetColor:
-			case SetBrightness:
-			case SetVibration:
-			case Draw:
-			case ConfirmFramebuff:
-				// nothing
-			case Version:
-				l.Version = fmt.Sprintf("%d.%d.%d", m.data[0], m.data[1], m.data[2])
-				slog.Info("Received 'Version' response", "version", l.Version)
-			case Serial:
-				l.SerialNo = string(m.data)
-				slog.Info("Received 'Serial' response", "serial", l.SerialNo)
+
 			case ButtonPress:
 				button := Button(binary.BigEndian.Uint16(message[2:]))
 				upDown := ButtonStatus(message[4])

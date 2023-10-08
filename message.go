@@ -21,9 +21,8 @@ const (
 	Version                      = 0x07
 	SetBrightness                = 0x09
 	MCU                          = 0x0d
-	WriteFramebuff               = 0x10
 	Draw                         = 0x0f
-	ConfirmFramebuff             = 0x10
+	WriteFramebuff               = 0x10
 	SetVibration                 = 0x1b
 	Touch                        = 0x4d
 	TouchEnd                     = 0x6d
@@ -92,10 +91,10 @@ func (m *Message) asBytes() []byte {
 func (m *Message) String() string {
 	d := m.data
 
-	if len(d) > 8 {
-		d = d[0:8]
-	}
-
+	if len(d) > 16 {
+		d = d[0:16]
+		return fmt.Sprintf("{len: %d, type: %02x, txn: %02x, data: %v..., actual_len: %d}", m.length, m.messageType, m.transactionID, d, len(m.data))
+	} 
 	return fmt.Sprintf("{len: %d, type: %02x, txn: %02x, data: %v}", m.length, m.messageType, m.transactionID, d)
 }
 
@@ -137,15 +136,29 @@ func (l *Loupedeck) SendWithCallback(m *Message, c transactionCallback) error {
 }
 
 // function SendAndWait sends a message and then waits for a response, returning the response message.
-func (l *Loupedeck) sendAndWait(m *Message, timeout time.Duration) (resp *Message, err error) {
+func (l *Loupedeck) SendAndWait(m *Message, timeout time.Duration) (resp *Message, err error) {
 	ch := make(chan *Message)
 	defer close(ch)
 	// TODO(scottlaird): actually implement the timeout.
 	l.SendWithCallback(m, func(m2 *Message) {
+		defer func() {
+			recover()
+		}()
 		slog.Info("sendAndWait callback received, sending to channel")
 		ch <- m2
 	})
 
+	// Trying SendAndWait with Draw() usually fails, because it
+	// doesn't get a response back until after the following
+	// message has been sent.  Trying to figure out if this is a
+	// weird Loupedeck thing or a protocol issue or what.  Try
+	// sending a ping over WS, just to see if anything shakes
+	// loose.
+	
+//	slog.Info("Sending ping.")
+//	err = l.conn.WriteControl(websocket.PingMessage, []byte{}, time.Now().Add(time.Second))
+//	slog.Info("Ping send", "err", err)
+	
 	select {
 	case resp = <-ch:
 		slog.Info("sendAndWait received ok")

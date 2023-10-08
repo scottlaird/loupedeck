@@ -77,6 +77,8 @@ func doConnect(c *SerialWebSockConn) (*Loupedeck, error) {
 			return c, nil
 		},
 		HandshakeTimeout: 1 * time.Second,
+		ReadBufferSize: 1048576,
+		WriteBufferSize: 1048576,
 	}
 
 	header := http.Header{}
@@ -112,6 +114,11 @@ func doConnect(c *SerialWebSockConn) (*Loupedeck, error) {
 	slog.Info("Sending reset.")
 	data := make([]byte, 0)
 	m := l.NewMessage(Reset, data)
+	l.Send(m)
+
+	slog.Info("Setting default brightness.")
+	data = []byte{9}
+	m = l.NewMessage(SetBrightness, data)
 	l.Send(m)
 
 	// Ask the device about itself.  The responses come back
