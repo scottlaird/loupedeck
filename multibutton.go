@@ -27,43 +27,43 @@ import (
 // is touched, it loops back to the first image in the set.
 type MultiButton struct {
 	loupedeck *Loupedeck
-	display   Display
+	display   *Display
 	images    []image.Image
 	values    []int
 	value     *WatchedInt
 	x, y      int
 }
 
-// Function TouchToXY turns a specific TouchButton into a set of x,y +
+// Function touchToXY turns a specific TouchButton into a set of x,y +
 // Display addresses, for use with the Draw function.
-func TouchToXY(b TouchButton) (int, int, Display) {
+func touchToXYMain(b TouchButton) (int, int) {
 	switch b {
 	case Touch1:
-		return 0, 0, DisplayMain
+		return 0, 0
 	case Touch2:
-		return 90, 0, DisplayMain
+		return 90, 0
 	case Touch3:
-		return 180, 0, DisplayMain
+		return 180, 0
 	case Touch4:
-		return 270, 0, DisplayMain
+		return 270, 0
 	case Touch5:
-		return 0, 90, DisplayMain
+		return 0, 90
 	case Touch6:
-		return 90, 90, DisplayMain
+		return 90, 90
 	case Touch7:
-		return 180, 90, DisplayMain
+		return 180, 90
 	case Touch8:
-		return 270, 90, DisplayMain
+		return 270, 90
 	case Touch9:
-		return 0, 180, DisplayMain
+		return 0, 180
 	case Touch10:
-		return 90, 180, DisplayMain
+		return 90, 180
 	case Touch11:
-		return 180, 180, DisplayMain
+		return 180, 180
 	case Touch12:
-		return 270, 180, DisplayMain
+		return 270, 180
 	default:
-		return 0, 0, DisplayMain
+		return 0, 0
 	}
 }
 
@@ -72,7 +72,8 @@ func TouchToXY(b TouchButton) (int, int, Display) {
 // this is the first image (and default value) for the MultiButton.
 // Additional images and values can be added via the Add function.
 func (l *Loupedeck) NewMultiButton(watchedint *WatchedInt, b TouchButton, im image.Image, val int) *MultiButton {
-	x, y, display := TouchToXY(b)
+	display := l.GetDisplay("main")
+	x, y := touchToXYMain(b)
 
 	m := &MultiButton{
 		loupedeck: l,
@@ -105,7 +106,7 @@ func (m *MultiButton) Add(im image.Image, value int) {
 
 // Function Draw redraws the MultiButton on the Loupedeck live.
 func (m *MultiButton) Draw() {
-	m.loupedeck.Draw(m.display, m.images[m.GetCur()], m.x, m.y)
+	m.display.Draw(m.images[m.GetCur()], m.x, m.y)
 }
 
 // Function GetCur gets the current value of the MultiButton.  The

@@ -103,6 +103,7 @@ func doConnect(c *SerialWebSockConn) (*Loupedeck, error) {
 		Product:              c.Product,
 		Model:                "foo",
 		transactionCallbacks: map[byte]transactionCallback{},
+		displays:             map[string]*Display{},
 	}
 	l.SetDefaultFont()
 

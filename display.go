@@ -9,27 +9,67 @@ import (
 
 // Type Display is part of the Loupedeck protocol, used to identify
 // which of the displays on the Loupedeck to write to.
-type Display uint16
+type Display struct {
+	loupedeck        *Loupedeck
+	id               byte
+	width, height    int
+	offsetx, offsety int // used for mapping legacy left/center/right screens onto unified devices.
+	Name             string
+	bigEndian        bool
+}
 
-// These vary on different Loupedecks; newer models (and even some
-// older models with new firmware) combine the Main/Left/Right screens
-// into a single logical display called 'M'.  So, to have a stable API
-// against varying hardware, we're going to need to add an extra
-// mapping layer here that dynamically switches between configs based
-// on which device is detected, and probably includes offsets so that
-// we can put "virtual" left/right screens on top of single-screened
-// devices.
-const (
-	DisplayMain   Display = 'A'
-	DisplayLeft           = 'L'
-	DisplayRight          = 'R'
-	DisplayCTDial         = 'W'
-	DisplaySingle         = 'M' // Razor and newer Loupedeck devices only
-)
+// Function GetDisplay returns a Display object with a given name if
+// it exists, otherwise it returns nil.
+//
+// Traditional Loupedeck devices had 3 displays, Left, Center, and
+// Right.  Newer devices make all 3 look like a single display, and
+// it's impossible to know at compile-time what any given device will
+// support, so we need to create them dynamically and then look them
+// up.
+//
+// In addition, some devices (like the Loupedeck CT) have additional
+// displays.
+//
+// For now, common display names are:
+//
+//   - left (on all devices, emulated on newer hardware)
+//   - right (on all devices, emulated on newer hardware)
+//   - main (on all devices, emulated on newer hardware)
+//   - dial (Loupedeck CT only)
+//   - main (only on newer hardware)
+func (l *Loupedeck) GetDisplay(name string) *Display {
+	return l.displays[name]
+}
+
+func (l *Loupedeck) addDisplay(name string, id byte, width, height, offsetx, offsety int) {
+	d := &Display{
+		loupedeck: l,
+		Name:      name,
+		id:        id,
+		width:     width,
+		height:    height,
+		offsetx:   offsetx,
+		offsety:   offsety,
+		bigEndian: false,
+	}
+	l.displays[name] = d
+}
+
+func (l *Loupedeck) SetDisplays() {
+	l.addDisplay("left", 'L', 60, 270, 0, 0)
+	l.addDisplay("main", 'A', 360, 270, 0, 0)
+	l.addDisplay("right", 'R', 60, 270, 0, 0)
+	l.addDisplay("all", 'M', 480, 270, 0, 0)
+	l.addDisplay("dial", 'W', 240, 240, 0, 0)
+}
 
 // Function Height returns the height (in pixels) of the Loupedeck's displays.
-func (l *Loupedeck) Height() int {
-	return 270
+func (d *Display) Height() int {
+	return d.height
+}
+
+func (d *Display) Width() int {
+	return d.width
 }
 
 // Function Draw draws an image onto a specific display of the
@@ -43,13 +83,13 @@ func (l *Loupedeck) Height() int {
 // Most Loupedeck screens are little-endian, except for the knob
 // screen on the Loupedeck CT, which is big-endian.  This does not
 // deal with this case correctly yet.
-func (l *Loupedeck) Draw(displayid Display, im image.Image, xoff, yoff int) {
-	slog.Info("Draw called", "Display", string(displayid), "xoff", xoff, "yoff", yoff, "width", im.Bounds().Dx(), "height", im.Bounds().Dy())
+func (d *Display) Draw(im image.Image, xoff, yoff int) {
+	slog.Info("Draw called", "Display", d.Name, "xoff", xoff, "yoff", yoff, "width", im.Bounds().Dx(), "height", im.Bounds().Dy())
 	littleEndian := true
 
 	// Call 'WriteFramebuff'
 	data := make([]byte, 10)
-	binary.BigEndian.PutUint16(data[0:], uint16(displayid))
+	binary.BigEndian.PutUint16(data[0:], uint16(d.id))
 	binary.BigEndian.PutUint16(data[2:], uint16(xoff))
 	binary.BigEndian.PutUint16(data[4:], uint16(yoff))
 	binary.BigEndian.PutUint16(data[6:], uint16(im.Bounds().Dx()))
@@ -68,13 +108,11 @@ func (l *Loupedeck) Draw(displayid Display, im image.Image, xoff, yoff int) {
 			} else {
 				data = append(data, highByte, lowByte)
 			}
-			//			data = append(data, byte(pixel&0xff))
-			//			data = append(data, byte(pixel>>8))
 		}
 	}
 
-	m := l.NewMessage(WriteFramebuff, data)
-	l.Send(m)
+	m := d.loupedeck.NewMessage(WriteFramebuff, data)
+	d.loupedeck.Send(m)
 
 	//resp, err := l.sendAndWait(m, 1*time.Second)
 	//if err != nil {
@@ -89,7 +127,7 @@ func (l *Loupedeck) Draw(displayid Display, im image.Image, xoff, yoff int) {
 	// Ideally, we'd batch these and only call Draw when we're
 	// doing with multiple FB updates.
 	data2 := make([]byte, 2)
-	binary.BigEndian.PutUint16(data2[0:], uint16(displayid))
-	m2 := l.NewMessage(Draw, data2)
-	l.Send(m2)
+	binary.BigEndian.PutUint16(data2[0:], uint16(d.id))
+	m2 := d.loupedeck.NewMessage(Draw, data2)
+	d.loupedeck.Send(m2)
 }

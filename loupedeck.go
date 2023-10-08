@@ -36,9 +36,10 @@ import (
 	"image"
 	"image/color"
 	"image/draw"
-//	"log/slog"
+	//	"log/slog"
 	"sync"
 )
+
 type transactionCallback func(m *Message)
 
 // Type Loupedeck describes a Loupedeck device.
@@ -61,8 +62,8 @@ type Loupedeck struct {
 	transactionID        uint8
 	transactionMutex     sync.Mutex
 	transactionCallbacks map[byte]transactionCallback
+	displays             map[string]*Display
 }
-
 
 func (l *Loupedeck) Close() {
 	l.conn.Close()

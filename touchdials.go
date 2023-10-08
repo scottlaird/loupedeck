@@ -36,7 +36,7 @@ import (
 // at once.
 type TouchDial struct {
 	loupedeck              *Loupedeck
-	display                Display
+	display                *Display
 	w1, w2, w3             *WatchedInt
 	dragv1, dragv2, dragv3 int
 	Knob1, Knob2, Knob3    *IntKnob
@@ -44,14 +44,14 @@ type TouchDial struct {
 	dragstart              uint16
 }
 
-func (l *Loupedeck) NewTouchDial(displayid Display, w1, w2, w3 *WatchedInt, min, max int) *TouchDial {
+func (l *Loupedeck) NewTouchDial(display *Display, w1, w2, w3 *WatchedInt, min, max int) *TouchDial {
 	touch := TouchLeft
 	var knob1, knob2, knob3 Knob
 	knob1 = Knob1
 	knob2 = Knob2
 	knob3 = Knob3
 
-	if displayid == DisplayRight {
+	if display.Name == "right" {
 		touch = TouchRight
 		knob1 = Knob4
 		knob2 = Knob5
@@ -60,13 +60,13 @@ func (l *Loupedeck) NewTouchDial(displayid Display, w1, w2, w3 *WatchedInt, min,
 
 	touchdial := &TouchDial{
 		loupedeck: l,
-		display:   displayid,
+		display:   display,
 		w1:        w1,
 		w2:        w2,
 		w3:        w3,
 	}
 
-	touchdial.touchdivisor = int(float64(l.Height()) / float64(max-min))
+	touchdial.touchdivisor = int(float64(display.Height()) / float64(max-min))
 
 	touchdial.Knob1 = l.IntKnob(knob1, min, max, w1)
 	touchdial.Knob2 = l.IntKnob(knob2, min, max, w2)
@@ -116,5 +116,5 @@ func (t *TouchDial) Draw() {
 	fd.Dot = freetype.Pt(10, 260)
 	fd.DrawString(strconv.Itoa(t.w3.Get()))
 
-	t.loupedeck.Draw(t.display, im, 0, 0)
+	t.display.Draw(im, 0, 0)
 }
