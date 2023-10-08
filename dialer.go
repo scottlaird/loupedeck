@@ -26,12 +26,12 @@ type SerialWebSockConn struct {
 func (l *SerialWebSockConn) Read(b []byte) (n int, err error) {
 	//slog.Info("Reading", "limit_bytes", len(b))
 	n, err = l.Port.Read(b)
-	slog.Info("Read", "bytes", n, "err", err, "data", fmt.Sprintf("%v", b[:n]))
+	//slog.Info("Read", "bytes", n, "err", err, "data", fmt.Sprintf("%v", b[:n]))
 	return n, err
 }
 
 func (l *SerialWebSockConn) Write(b []byte) (n int, err error) {
-	slog.Info("Writing", "bytes", len(b), "message", fmt.Sprintf("%v", b))
+	//slog.Info("Writing", "bytes", len(b), "message", fmt.Sprintf("%v", b))
 	return l.Port.Write(b)
 }
 
@@ -80,7 +80,7 @@ func ConnectSerialAuto() (*SerialWebSockConn, error) {
 				Vendor: port.VID,
 				Product: port.PID,
 			}
-			slog.Info("Port good, continuing")
+			slog.Info("Found Loupedeck", "vendor", conn.Vendor, "product", conn.Product)
 
 			return conn, nil
 		}
