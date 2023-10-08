@@ -17,10 +17,12 @@
 package loupedeck
 
 import (
-	"github.com/golang/freetype"
+	"golang.org/x/image/font"
+	"golang.org/x/image/math/fixed"
 	"image"
 	"image/color"
 	"image/draw"
+	"log/slog"
 	"strconv"
 )
 
@@ -98,6 +100,18 @@ func (l *Loupedeck) NewTouchDial(display *Display, w1, w2, w3 *WatchedInt, min, 
 	return touchdial
 }
 
+func drawRightJustifiedStringAt(fd font.Drawer, s string, x, y int) {
+	bounds, _ := fd.BoundString(s)
+	width := bounds.Max.X - bounds.Min.X
+	x26 := fixed.I(x)
+	y26 := fixed.I(y)
+
+	slog.Info("Right justifying", "x", x, "y", y, "x26", x26, "y26", y26, "width", width)
+
+	fd.Dot = fixed.Point26_6{x26 - width, y26}
+	fd.DrawString(s)
+}
+
 // Function Draw updates the display for a TouchDial.
 func (t *TouchDial) Draw() {
 	im := image.NewRGBA(image.Rect(0, 0, 60, 270))
@@ -107,14 +121,11 @@ func (t *TouchDial) Draw() {
 	fd := t.loupedeck.FontDrawer()
 	fd.Dst = im
 
-	fd.Dot = freetype.Pt(10, 30)
-	fd.DrawString(strconv.Itoa(t.w1.Get()))
-
-	fd.Dot = freetype.Pt(10, 150)
-	fd.DrawString(strconv.Itoa(t.w2.Get()))
-
-	fd.Dot = freetype.Pt(10, 260)
-	fd.DrawString(strconv.Itoa(t.w3.Get()))
+	baseline := 55
+	height := 90
+	drawRightJustifiedStringAt(fd, strconv.Itoa(t.w1.Get()), 48, baseline)
+	drawRightJustifiedStringAt(fd, strconv.Itoa(t.w2.Get()), 48, baseline+height)
+	drawRightJustifiedStringAt(fd, strconv.Itoa(t.w3.Get()), 48, baseline+2*height)
 
 	t.display.Draw(im, 0, 0)
 }

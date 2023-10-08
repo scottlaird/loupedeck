@@ -77,8 +77,6 @@ func doConnect(c *SerialWebSockConn) (*Loupedeck, error) {
 			return c, nil
 		},
 		HandshakeTimeout: 1 * time.Second,
-		ReadBufferSize: 1048576,
-		WriteBufferSize: 1048576,
 	}
 
 	header := http.Header{}

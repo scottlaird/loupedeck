@@ -5,7 +5,7 @@ import (
 	"image"
 	"log/slog"
 	"maze.io/x/pixel/pixelcolor"
-//	"time"
+	// "time"
 )
 
 // Type Display is part of the Loupedeck protocol, used to identify
@@ -69,7 +69,7 @@ func (l *Loupedeck) SetDisplays() {
 		l.addDisplay("left", 'M', 60, 270, 0, 0, false)
 		l.addDisplay("main", 'M', 360, 270, 60, 0, false)
 		l.addDisplay("right", 'M', 60, 270, 420, 0, false)
-		l.addDisplay("all", 'M', 480, 270, 0, 0, false)  // Same as left+main+right
+		l.addDisplay("all", 'M', 480, 270, 0, 0, false) // Same as left+main+right
 		l.addDisplay("dial", 'W', 240, 240, 0, 0, true)
 	case "0004":
 		slog.Info("Using Loupedeck Live display settings.")
@@ -81,9 +81,9 @@ func (l *Loupedeck) SetDisplays() {
 		l.addDisplay("left", 'M', 60, 270, 0, 0, false)
 		l.addDisplay("main", 'M', 360, 270, 60, 0, false)
 		l.addDisplay("right", 'M', 60, 270, 420, 0, false)
-		l.addDisplay("all", 'M', 480, 270, 0, 0, false)  // Same as left+main+right
+		l.addDisplay("all", 'M', 480, 270, 0, 0, false) // Same as left+main+right
 	default:
-		panic("Unknown device type: " + l.Product)  
+		panic("Unknown device type: " + l.Product)
 	}
 }
 
@@ -148,7 +148,7 @@ func (d *Display) Draw(im image.Image, xoff, yoff int) {
 
 	// I'd love to watch the return code for WriteFramebuff, but
 	// it doesn't seem to come back until after Draw, below.
-	
+
 	//resp, err := d.loupedeck.SendAndWait(m, 50*time.Millisecond)
 	//if err != nil {
 	//	slog.Warn("Received error on draw", "message", resp)

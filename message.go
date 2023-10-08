@@ -13,20 +13,20 @@ type MessageType byte
 
 // See 'COMMANDS' in https://github.com/foxxyz/loupedeck/blob/master/constants.js
 const (
-	ButtonPress      MessageType = 0x00
-	KnobRotate                   = 0x01
-	SetColor                     = 0x02
-	Serial                       = 0x03
-	Reset                        = 0x06
-	Version                      = 0x07
-	SetBrightness                = 0x09
-	MCU                          = 0x0d
-	Draw                         = 0x0f
-	WriteFramebuff               = 0x10
-	SetVibration                 = 0x1b
-	Touch                        = 0x4d
-	TouchEnd                     = 0x6d
-	TouchEndCT                   = 0x72
+	ButtonPress    MessageType = 0x00
+	KnobRotate                 = 0x01
+	SetColor                   = 0x02
+	Serial                     = 0x03
+	Reset                      = 0x06
+	Version                    = 0x07
+	SetBrightness              = 0x09
+	MCU                        = 0x0d
+	Draw                       = 0x0f
+	WriteFramebuff             = 0x10
+	SetVibration               = 0x1b
+	Touch                      = 0x4d
+	TouchEnd                   = 0x6d
+	TouchEndCT                 = 0x72
 )
 
 // Type Message defines a message for communicating with the Loupedeck
@@ -94,7 +94,7 @@ func (m *Message) String() string {
 	if len(d) > 16 {
 		d = d[0:16]
 		return fmt.Sprintf("{len: %d, type: %02x, txn: %02x, data: %v..., actual_len: %d}", m.length, m.messageType, m.transactionID, d, len(m.data))
-	} 
+	}
 	return fmt.Sprintf("{len: %d, type: %02x, txn: %02x, data: %v}", m.length, m.messageType, m.transactionID, d)
 }
 
@@ -118,6 +118,13 @@ func (l *Loupedeck) newTransactionID() uint8 {
 // Function Send sends a message to the specified device.
 func (l *Loupedeck) Send(m *Message) error {
 	slog.Info("Sending", "message", m.String())
+	l.transactionCallbacks[m.transactionID] = nil
+
+	return l.send(m)
+}
+
+// Function send sends a message to the specified device.
+func (l *Loupedeck) send(m *Message) error {
 	b := m.asBytes()
 	l.conn.WriteMessage(websocket.BinaryMessage, b)
 
@@ -132,7 +139,7 @@ func (l *Loupedeck) SendWithCallback(m *Message, c transactionCallback) error {
 	slog.Info("Setting callback", "message", m.String())
 	l.transactionCallbacks[m.transactionID] = c
 
-	return l.Send(m)
+	return l.send(m)
 }
 
 // function SendAndWait sends a message and then waits for a response, returning the response message.
@@ -154,11 +161,11 @@ func (l *Loupedeck) SendAndWait(m *Message, timeout time.Duration) (resp *Messag
 	// weird Loupedeck thing or a protocol issue or what.  Try
 	// sending a ping over WS, just to see if anything shakes
 	// loose.
-	
-//	slog.Info("Sending ping.")
-//	err = l.conn.WriteControl(websocket.PingMessage, []byte{}, time.Now().Add(time.Second))
-//	slog.Info("Ping send", "err", err)
-	
+
+	//	slog.Info("Sending ping.")
+	//	err = l.conn.WriteControl(websocket.PingMessage, []byte{}, time.Now().Add(time.Second))
+	//	slog.Info("Ping send", "err", err)
+
 	select {
 	case resp = <-ch:
 		slog.Info("sendAndWait received ok")
