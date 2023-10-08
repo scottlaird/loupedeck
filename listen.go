@@ -27,7 +27,7 @@ func (l *Loupedeck) Listen() {
 			slog.Warn("Unknown websocket message type received", "type", websocketMsgType)
 		}
 
-		m, _ := l.parseMessage(message)
+		m, _ := l.ParseMessage(message)
 		slog.Info("Read", "message", m.String())
 
 		if m.transactionID != 0 {

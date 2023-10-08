@@ -29,7 +29,6 @@ package loupedeck
 
 import (
 	"encoding/binary"
-	"fmt"
 	"github.com/gorilla/websocket"
 	"golang.org/x/image/font"
 	"golang.org/x/image/font/gofont/goregular"
@@ -40,21 +39,27 @@ import (
 	"image/draw"
 	"log/slog"
 	"maze.io/x/pixel/pixelcolor"
-	"net"
-	"net/http"
 	"sync"
-	"time"
 )
 
 // Type Display is part of the Loupedeck protocol, used to identify
 // which of the displays on the Loupedeck to write to.
 type Display uint16
 
+// These vary on different Loupedecks; newer models (and even some
+// older models with new firmware) combine the Main/Left/Right screens
+// into a single logical display called 'M'.  So, to have a stable API
+// against varying hardware, we're going to need to add an extra
+// mapping layer here that dynamically switches between configs based
+// on which device is detected, and probably includes offsets so that
+// we can put "virtual" left/right screens on top of single-screened
+// devices.
 const (
 	DisplayMain   Display = 'A'
 	DisplayLeft           = 'L'
 	DisplayRight          = 'R'
 	DisplayCTDial         = 'W'
+	DisplaySingle         = 'M'  // Razor and newer Loupedeck devices only
 )
 
 type transactionCallback func(m *Message)
@@ -81,128 +86,6 @@ type Loupedeck struct {
 	transactionCallbacks map[byte]transactionCallback
 }
 
-// Function ConnectAuto connects to a Loupedeck Live by automatically
-// locating the first USB Loupedeck device in the system.  If you have
-// more than one device and want to connect to a specific one, then
-// use ConnectPath().
-func ConnectAuto() (*Loupedeck, error) {
-	c, err := ConnectSerialAuto()
-	if err != nil {
-		return nil, err
-	}
-
-	return tryConnect(c)
-}
-
-// Function ConnectPath connects to a Loupedeck Live via a specified serial device.  If successful it returns a new Loupedeck.
-func ConnectPath(serialPath string) (*Loupedeck, error) {
-	c, err := ConnectSerialPath(serialPath)
-	if err != nil {
-		return nil, err
-	}
-
-	return tryConnect(c)
-}
-
-type connectResult struct {
-	l   *Loupedeck
-	err error
-}
-
-// function tryConnect helps make connections to USB devices more
-// reliable by adding timeout and retry logic.
-//
-// Without this, 50% of the time my LoupeDeck fails to connect the
-// HTTP link for the websocket.  We send the HTTP headers to request a
-// websocket connection, but the LoupeDeck never returns.
-//
-// This is a painful workaround for that.  It uses the generic Go
-// pattern for implementing a timeout (do the "real work" in a
-// goroutine, feeding answers to a channel, and then add a timeout on
-// select).  If the timeout triggers, then it tries a second time to
-// connect.  This has a 100% success rate for me.
-//
-// The actual connection logic is all in doConnect(), below.
-func tryConnect(c *SerialWebSockConn) (*Loupedeck, error) {
-	result := make(chan connectResult, 1)
-	go func() {
-		r := connectResult{}
-		r.l, r.err = doConnect(c)
-		result <- r
-	}()
-
-	select {
-	case <-time.After(2 * time.Second):
-		// timeout
-		slog.Info("Timeout! Trying again without timeout.")
-		return doConnect(c)
-
-	case result := <-result:
-		return result.l, result.err
-	}
-}
-
-func doConnect(c *SerialWebSockConn) (*Loupedeck, error) {
-	dialer := websocket.Dialer{
-		NetDial: func(network, addr string) (net.Conn, error) {
-			slog.Info("Dialing...")
-			return c, nil
-		},
-		HandshakeTimeout: 1 * time.Second,
-	}
-
-	header := http.Header{}
-
-	slog.Info("Attempting to open websocket connection")
-	conn, resp, err := dialer.Dial("ws://fake", header)
-
-	if err != nil {
-		slog.Warn("dial failed", "err", err)
-		return nil, err
-	}
-
-	slog.Info("Connect successful", "resp", resp)
-
-	l := &Loupedeck{
-		conn:                 conn,
-		serial:               c,
-		buttonBindings:       make(map[Button]ButtonFunc),
-		buttonUpBindings:     make(map[Button]ButtonFunc),
-		knobBindings:         make(map[Knob]KnobFunc),
-		touchBindings:        make(map[TouchButton]TouchFunc),
-		touchUpBindings:      make(map[TouchButton]TouchFunc),
-		Vendor:               c.Vendor,
-		Product:              c.Product,
-		Model:                "foo",
-		transactionCallbacks: map[byte]transactionCallback{},
-	}
-	l.SetDefaultFont()
-
-	slog.Info("Found Loupedeck", "vendor", l.Vendor, "product", l.Product)
-
-	slog.Info("Sending reset.")
-	data := make([]byte, 0)
-	m := l.newMessage(Reset, data)
-	l.send(m)
-
-	// Ask the device about itself.  The responses come back
-	// asynchronously, so we need to provide a callback.  Since
-	// `listen()` hasn't been called yet, we *have* to use
-	// callbacks, blocking via 'sendAndWait' isn't going to work.
-	m = l.newMessage(Version, data)
-	l.sendWithCallback(m, func(m *Message) {
-		l.Version = fmt.Sprintf("%d.%d.%d", m.data[0], m.data[1], m.data[2])
-		slog.Info("Received 'Version' response", "version", l.Version)
-	})
-
-	m = l.newMessage(Serial, data)
-	l.sendWithCallback(m, func(m *Message) {
-		l.SerialNo = string(m.data)
-		slog.Info("Received 'Serial' response", "serial", l.SerialNo)
-	})
-
-	return l, nil
-}
 
 func (l *Loupedeck) Close() {
 	l.conn.Close()
@@ -310,8 +193,8 @@ func (l *Loupedeck) SetDefaultFont() error {
 func (l *Loupedeck) SetBrightness(b int) error {
 	data := make([]byte, 1)
 	data[0] = byte(b)
-	m := l.newMessage(SetBrightness, data)
-	return l.send(m)
+	m := l.NewMessage(SetBrightness, data)
+	return l.Send(m)
 }
 
 // Function SetButtonColor sets the color of a specific Button.  The
@@ -325,8 +208,8 @@ func (l *Loupedeck) SetButtonColor(b Button, c color.RGBA) error {
 	data[1] = c.R
 	data[2] = c.G
 	data[3] = c.B
-	m := l.newMessage(SetColor, data)
-	return l.send(m)
+	m := l.NewMessage(SetColor, data)
+	return l.Send(m)
 }
 
 // Function Draw draws an image onto a specific display of the
@@ -370,8 +253,8 @@ func (l *Loupedeck) Draw(displayid Display, im image.Image, xoff, yoff int) {
 		}
 	}
 
-	m := l.newMessage(WriteFramebuff, data)
-	l.send(m)
+	m := l.NewMessage(WriteFramebuff, data)
+	l.Send(m)
 
 	//resp, err := l.sendAndWait(m, 1*time.Second)
 	//if err != nil {
@@ -387,6 +270,6 @@ func (l *Loupedeck) Draw(displayid Display, im image.Image, xoff, yoff int) {
 	// doing with multiple FB updates.
 	data2 := make([]byte, 2)
 	binary.BigEndian.PutUint16(data2[0:], uint16(displayid))
-	m2 := l.newMessage(Draw, data2)
-	l.send(m2)
+	m2 := l.NewMessage(Draw, data2)
+	l.Send(m2)
 }

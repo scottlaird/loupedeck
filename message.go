@@ -30,6 +30,13 @@ const (
 	TouchEndCT                   = 0x72
 )
 
+// Type Message defines a message for communicating with the Loupedeck
+// over USB.  All communication with the Loupedeck occurs via
+// Messages, but most application software can use higher-level
+// functions in this library and never touch messages directly.
+//
+// The exception would be wanting to use a feature like vibration that
+// isn't currently supported in this library.
 type Message struct {
 	transactionID byte
 	messageType   MessageType
@@ -37,7 +44,10 @@ type Message struct {
 	data          []byte
 }
 
-func (l *Loupedeck) newMessage(messageType MessageType, data []byte) *Message {
+// Function NewMessage creates a new low-level Loupedeck message with
+// a specified type and data.  This isn't generally needed for
+// end-use.
+func (l *Loupedeck) NewMessage(messageType MessageType, data []byte) *Message {
 	length := len(data) + 3
 	if length > 255 {
 		length = 255
@@ -53,7 +63,10 @@ func (l *Loupedeck) newMessage(messageType MessageType, data []byte) *Message {
 	return &m
 }
 
-func (l *Loupedeck) parseMessage(b []byte) (*Message, error) {
+// Function ParseMessage creates a Loupedeck Message from a block of
+// bytes.  This is used to decode incoming messages from a Loupedeck,
+// and shouldn't generally be needed outside of this library.
+func (l *Loupedeck) ParseMessage(b []byte) (*Message, error) {
 	m := Message{
 		length:        b[0],
 		messageType:   MessageType(b[1]),
@@ -63,8 +76,8 @@ func (l *Loupedeck) parseMessage(b []byte) (*Message, error) {
 	return &m, nil
 }
 
-// function AsBytes() returns the wire-format form of the message
-func (m *Message) AsBytes() []byte {
+// function asBytes() returns the wire-format form of the message.
+func (m *Message) asBytes() []byte {
 	b := make([]byte, 3)
 	b[0] = m.length
 	b[1] = byte(m.messageType)
@@ -74,6 +87,8 @@ func (m *Message) AsBytes() []byte {
 	return b
 }
 
+// function String() returns a human-readable form of the message for
+// debugging use.
 func (m *Message) String() string {
 	d := m.data
 
@@ -101,27 +116,32 @@ func (l *Loupedeck) newTransactionID() uint8 {
 	return t
 }
 
-func (l *Loupedeck) send(m *Message) error {
+// Function Send sends a message to the specified device.
+func (l *Loupedeck) Send(m *Message) error {
 	slog.Info("Sending", "message", m.String())
-	b := m.AsBytes()
+	b := m.asBytes()
 	l.conn.WriteMessage(websocket.BinaryMessage, b)
 
 	return nil
 }
 
-func (l *Loupedeck) sendWithCallback(m *Message, c transactionCallback) error {
+// Function SendWithCallback sends a message to the specified device
+// and registers a callback.  When (or if) the Loupedeck sends a
+// response to the message, the callback function will be called and
+// provided with the response message.
+func (l *Loupedeck) SendWithCallback(m *Message, c transactionCallback) error {
 	slog.Info("Setting callback", "message", m.String())
 	l.transactionCallbacks[m.transactionID] = c
 
-	return l.send(m)
+	return l.Send(m)
 }
 
-// function sendAndWait sends a message and then waits for a response, returning the response message.
+// function SendAndWait sends a message and then waits for a response, returning the response message.
 func (l *Loupedeck) sendAndWait(m *Message, timeout time.Duration) (resp *Message, err error) {
 	ch := make(chan *Message)
 	defer close(ch)
 	// TODO(scottlaird): actually implement the timeout.
-	l.sendWithCallback(m, func(m2 *Message) {
+	l.SendWithCallback(m, func(m2 *Message) {
 		slog.Info("sendAndWait callback received, sending to channel")
 		ch <- m2
 	})
@@ -134,35 +154,4 @@ func (l *Loupedeck) sendAndWait(m *Message, timeout time.Duration) (resp *Messag
 		slog.Warn("sendAndWait timeout")
 		return nil, fmt.Errorf("Timeout waiting for response")
 	}
-}
-
-// Function sendMessage sends a formatted message to the Loupedeck.
-func (l *Loupedeck) sendMessage(h MessageType, data []byte) error {
-	transactionID := l.newTransactionID()
-	b := make([]byte, 3) // should probably add len(data) to make append() cheaper.
-
-	// The Loupedeck protocol only uses a single byte for lengths,
-	// but big images, etc, are larger than that.  Since the
-	// length field is only 8 bits, it uses 255 to mean "255 or
-	// larger".  Given that, I'm not sure why it has a length
-	// field at all, but whatever.
-	length := 3 + len(data)
-	if length > 255 {
-		length = 255
-	}
-
-	b[0] = byte(length)
-	b[1] = byte(h)
-	b[2] = byte(transactionID)
-	b = append(b, data...)
-
-	if len(b) > 32 {
-		slog.Info("Sendmessage", "header type", h, "len", len(b), "data", fmt.Sprintf("%v", b[0:32]))
-	} else {
-		slog.Info("Sendmessage", "header type", h, "len", len(b), "data", fmt.Sprintf("%v", b))
-	}
-
-	l.conn.WriteMessage(websocket.BinaryMessage, b)
-	//l.serial.Write(b)
-	return nil
 }
