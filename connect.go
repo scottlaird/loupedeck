@@ -105,19 +105,28 @@ func doConnect(c *SerialWebSockConn) (*Loupedeck, error) {
 		transactionCallbacks: map[byte]transactionCallback{},
 		displays:             map[string]*Display{},
 	}
-	l.SetDefaultFont()
+	err = l.SetDefaultFont()
+	if err != nil {
+		return nil, fmt.Errorf("Unable to set default font: %v", err)
+	}
 
 	slog.Info("Found Loupedeck", "vendor", l.Vendor, "product", l.Product)
 
 	slog.Info("Sending reset.")
 	data := make([]byte, 0)
 	m := l.NewMessage(Reset, data)
-	l.Send(m)
+	err = l.Send(m)
+	if err != nil {
+		return nil, fmt.Errorf("Unable to send: %v", err)
+	}
 
 	slog.Info("Setting default brightness.")
 	data = []byte{9}
 	m = l.NewMessage(SetBrightness, data)
-	l.Send(m)
+	err = l.Send(m)
+	if err != nil {
+		return nil, fmt.Errorf("Unable to send: %v", err)
+	}
 
 	// Ask the device about itself.  The responses come back
 	// asynchronously, so we need to provide a callback.  Since
