@@ -135,6 +135,21 @@ const (
 //   - The Y location touched (relative to the whole display)
 type TouchFunc func(TouchButton, ButtonStatus, uint16, uint16)
 
+// TouchDKFunc is a function signature used for callbacks on TouchCTButton
+// events, similar to TouchFunc.  The parameters are:
+//
+//   - The ButtonStatus (down/up)
+//   - The X location touched (relative to the whole display)
+//   - The Y location touched (relative to the whole display)
+type TouchDKFunc func(ButtonStatus, uint16, uint16)
+
+type DragEvent uint16
+
+const (
+	DragClick DragEvent = 1
+	DragDone  DragEvent = 2
+)
+
 // touchCoordToButton translates an x,y coordinate on the
 // touchscreen to a TouchButton.
 func touchCoordToButton(x, y uint16) TouchButton {
@@ -185,4 +200,9 @@ func (l *Loupedeck) BindTouch(b TouchButton, f TouchFunc) {
 // provided TouchFunc is called.
 func (l *Loupedeck) BindTouchUp(b TouchButton, f TouchFunc) {
 	l.touchUpBindings[b] = f
+}
+
+// BindTouchCT sets a callback for actions when the Loupedeck CT's touch button is touched.
+func (l *Loupedeck) BindTouchCT(f TouchDKFunc) {
+	l.touchDKBindings = f
 }
