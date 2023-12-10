@@ -25,6 +25,7 @@ const (
 	WriteFramebuff MessageType = 0x10
 	SetVibration   MessageType = 0x1b
 	Touch          MessageType = 0x4d
+	TouchCT        MessageType = 0x52
 	TouchEnd       MessageType = 0x6d
 	TouchEndCT     MessageType = 0x72
 )

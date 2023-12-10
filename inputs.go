@@ -22,39 +22,44 @@ package loupedeck
 type Button uint16
 
 const (
-	// KnobPress1 is sent when the first knob (upper left) is clicked.
 	KnobPress1 Button = 1
-	// KnobPress2 is sent when the second knob (middle left) is clicked.
 	KnobPress2        = 2
-	// KnobPress3 is sent when the third knob (bottom left) is clicked.
 	KnobPress3        = 3
-	// KnobPress4 is sent when the fourth knob (upper right) is clicked.
 	KnobPress4        = 4
-	// KnobPress5 is sent when the fifth knob (middle right) is clicked.
 	KnobPress5        = 5
-	// KnobPress6 is sent when the sixth knob (middle right) is clicked.
 	KnobPress6        = 6
+
 	// Circle is sent when the left-most hardware button under the
 	// display is clicked.  This has a circle icon on the
 	// Loupedeck Live, but is unfortunately labeled "1" on the
 	// Loupedeck CT.
 	Circle            = 7
-	// Button1 is sent when the button to the right of the circle
-	// button is clicked.  This is labeled "1" on the Loupdeck
-	// live and "2" on the Loupedeck CT.
 	Button1           = 8
-	// Button2 is sent when the third button is clicked.
 	Button2           = 9
-	// Button3 is sent when the fourth button is clicked.
 	Button3           = 10
-	// Button4 is sent when the fifth button is clicked.
 	Button4           = 11
-	// Button5 is sent when the sixth button is clicked.
 	Button5           = 12
-	// Button6 is sent when the seventh button is clicked.
 	Button6           = 13
-	// Button7 is sent when the eighth (rightmost) button is clicked.
 	Button7           = 14
+
+	// CT-specific buttons.
+	CTCircle = 15
+	Undo = 16
+	Keyboard = 17
+	Enter = 18
+	Save = 19
+	LeftFn = 20
+	Up = 21
+	A = 21
+	Left = 22
+	C = 22
+	RightFn = 23
+	Down = 24
+	B = 24
+	Right = 25
+	D = 25
+	E = 26
+	
 )
 
 // ButtonStatus represents the state of Buttons.
@@ -77,8 +82,10 @@ type ButtonFunc func(Button, ButtonStatus)
 type Knob uint16
 
 const (
+	// CTKnob is the large knob in the center of the Loupedeck CT
+	CTKnob Knob = 0
 	// Knob1 is the upper left knob.
-	Knob1 Knob = 1
+	Knob1 = 1
 	// Knob2 is the middle left knob.
 	Knob2      = 2
 	// Knob3 is the bottom left knob.
