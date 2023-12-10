@@ -59,8 +59,8 @@ func main() {
 	light6 := loupedeck.NewWatchedInt(0)
 	light6.AddWatcher(func(i int) { fmt.Printf("DMX 11->%d\n", i) })
 
-	_ = l.NewTouchDial(loupedeck.DisplayLeft, light1, light2, light3, 0, 100)
-	_ = l.NewTouchDial(loupedeck.DisplayRight, light4, light5, light6, 0, 10)
+	_ = l.NewTouchDial(l.GetDisplay("left"), light1, light2, light3, 0, 100)
+	_ = l.NewTouchDial(l.GetDisplay("right"), light4, light5, light6, 0, 10)
 
 	go func() {
 		time.Sleep(2 * time.Second)
