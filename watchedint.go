@@ -18,10 +18,10 @@ package loupedeck
 
 import ()
 
-// Type WatchFunc is used for callbacks for changes to a WatchedInt.
+// WatchFunc is used for callbacks for changes to a WatchedInt.
 type WatchFunc func(int)
 
-// Type WatchedInt wraps an int with zero or more callback watchers;
+// WatchedInt wraps an int with zero or more callback watchers;
 // whenever the value of the int changes (via Set), all of the
 // callbacks will be called.  This is used to implement a sane model
 // for Loupedeck Live knobs, etc.  Calling 'myknob.Set(3)' will update
@@ -32,7 +32,7 @@ type WatchedInt struct {
 	notifiers []WatchFunc
 }
 
-// Function NewWatchedInt creates a new WatchedInt with the specified initial value.
+// NewWatchedInt creates a new WatchedInt with the specified initial value.
 func NewWatchedInt(value int) *WatchedInt {
 	return &WatchedInt{
 		value:     value,
@@ -40,12 +40,12 @@ func NewWatchedInt(value int) *WatchedInt {
 	}
 }
 
-// Function Get returns the current value of the WatchedInt.
+// Get returns the current value of the WatchedInt.
 func (w *WatchedInt) Get() int {
 	return w.value
 }
 
-// Function Set updates the current value of the WatchedInt and calls all callback functions added via AddWatcher.
+// Set updates the current value of the WatchedInt and calls all callback functions added via AddWatcher.
 func (w *WatchedInt) Set(value int) {
 	w.value = value
 	for _, f := range w.notifiers {
@@ -53,7 +53,7 @@ func (w *WatchedInt) Set(value int) {
 	}
 }
 
-// Function AddWatcher adds a callback function for this WatchedInt.  The callback will be called whenever Set is called.
+// AddWatcher adds a callback function for this WatchedInt.  The callback will be called whenever Set is called.
 func (w *WatchedInt) AddWatcher(f WatchFunc) {
 	w.notifiers = append(w.notifiers, f)
 }

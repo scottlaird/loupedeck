@@ -26,7 +26,7 @@ import (
 	"strconv"
 )
 
-// Type TouchDial implements a "smart" bank of dials for the Loupedeck
+// TouchDial implements a "smart" bank of dials for the Loupedeck
 // Live.  If displayid is DisplayLeft then the TouchDial will display
 // knobs 1-3 on the left display, otherwise it will show knobs 4-6 on
 // the right display.
@@ -46,6 +46,7 @@ type TouchDial struct {
 	dragstart              uint16
 }
 
+// NewTouchDial creates a TouchDial.
 func (l *Loupedeck) NewTouchDial(display *Display, w1, w2, w3 *WatchedInt, min, max int) *TouchDial {
 	touch := TouchLeft
 	var knob1, knob2, knob3 Knob
@@ -108,11 +109,11 @@ func drawRightJustifiedStringAt(fd font.Drawer, s string, x, y int) {
 
 	slog.Info("Right justifying", "x", x, "y", y, "x26", x26, "y26", y26, "width", width)
 
-	fd.Dot = fixed.Point26_6{x26 - width, y26}
+	fd.Dot = fixed.Point26_6{X: x26 - width, Y: y26}
 	fd.DrawString(s)
 }
 
-// Function Draw updates the display for a TouchDial.
+// Draw updates the display for a TouchDial.
 func (t *TouchDial) Draw() {
 	im := image.NewRGBA(image.Rect(0, 0, 60, 270))
 	bg := color.RGBA{0, 0, 0, 255}

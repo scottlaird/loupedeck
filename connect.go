@@ -9,10 +9,10 @@ import (
 	"time"
 )
 
-// Function ConnectAuto connects to a Loupedeck Live by automatically
-// locating the first USB Loupedeck device in the system.  If you have
-// more than one device and want to connect to a specific one, then
-// use ConnectPath().
+// ConnectAuto connects to a Loupedeck Live by automatically locating
+// the first USB Loupedeck device in the system.  If you have more
+// than one device and want to connect to a specific one, then use
+// ConnectPath().
 func ConnectAuto() (*Loupedeck, error) {
 	c, err := ConnectSerialAuto()
 	if err != nil {
@@ -22,7 +22,8 @@ func ConnectAuto() (*Loupedeck, error) {
 	return tryConnect(c)
 }
 
-// Function ConnectPath connects to a Loupedeck Live via a specified serial device.  If successful it returns a new Loupedeck.
+// ConnectPath connects to a Loupedeck Live via a specified serial
+// device.  If successful it returns a new Loupedeck.
 func ConnectPath(serialPath string) (*Loupedeck, error) {
 	c, err := ConnectSerialPath(serialPath)
 	if err != nil {
@@ -37,8 +38,8 @@ type connectResult struct {
 	err error
 }
 
-// function tryConnect helps make connections to USB devices more
-// reliable by adding timeout and retry logic.
+// tryConnect helps make connections to USB devices more reliable by
+// adding timeout and retry logic.
 //
 // Without this, 50% of the time my LoupeDeck fails to connect the
 // HTTP link for the websocket.  We send the HTTP headers to request a

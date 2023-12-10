@@ -42,7 +42,7 @@ import (
 
 type transactionCallback func(m *Message)
 
-// Type Loupedeck describes a Loupedeck device.
+// Loupedeck describes a Loupedeck device.
 type Loupedeck struct {
 	Vendor               string
 	Product              string
@@ -65,12 +65,13 @@ type Loupedeck struct {
 	displays             map[string]*Display
 }
 
+// Close closes the connection to the Loupedeck.
 func (l *Loupedeck) Close() {
 	l.conn.Close()
 	l.serial.Close()
 }
 
-// Function FontDrawer returns a font.Drawer object configured to
+// FontDrawer returns a font.Drawer object configured to
 // writing text onto the Loupedeck's graphical buttons.
 func (l *Loupedeck) FontDrawer() font.Drawer {
 	return font.Drawer{
@@ -79,13 +80,13 @@ func (l *Loupedeck) FontDrawer() font.Drawer {
 	}
 }
 
-// Function Face returns the current font.Face in use for writing text
+// Face returns the current font.Face in use for writing text
 // onto the Loupedeck's graphical buttons.
 func (l *Loupedeck) Face() font.Face {
 	return l.face
 }
 
-// Function TextInBox writes a specified string into a x,y pixel
+// TextInBox writes a specified string into a x,y pixel
 // image.Image, using the specified foreground and background colors.
 // The font size used will be chosen to maximize the size of the text.
 func (l *Loupedeck) TextInBox(x, y int, s string, fg, bg color.Color) (image.Image, error) {
@@ -130,14 +131,14 @@ func (l *Loupedeck) TextInBox(x, y int, s string, fg, bg color.Color) (image.Ima
 
 		//fmt.Printf("H: %v  H: %v  Center: %v/%v\n", height, width, centerx, centery)
 
-		fd.Dot = fixed.Point26_6{centerx, centery}
+		fd.Dot = fixed.Point26_6{X: centerx, Y: centery}
 		fd.DrawString(s)
 		return im, nil
 	}
 
 }
 
-// Function SetDefaultFont sets the default font for drawing onto buttons.
+// SetDefaultFont sets the default font for drawing onto buttons.
 //
 // TODO(laird): Actually make it easy to override this default.
 func (l *Loupedeck) SetDefaultFont() error {
@@ -162,7 +163,7 @@ func (l *Loupedeck) SetDefaultFont() error {
 	return nil
 }
 
-// Function SetBrightness sets the overall brightness of the Loupedeck display.
+// SetBrightness sets the overall brightness of the Loupedeck display.
 func (l *Loupedeck) SetBrightness(b int) error {
 	data := make([]byte, 1)
 	data[0] = byte(b)
@@ -170,7 +171,7 @@ func (l *Loupedeck) SetBrightness(b int) error {
 	return l.Send(m)
 }
 
-// Function SetButtonColor sets the color of a specific Button.  The
+// SetButtonColor sets the color of a specific Button.  The
 // Loupedeck Live allows the 8 buttons below the display to be set to
 // specific colors, however the 'Circle' button's colors may be
 // overridden to show the status of the Loupedeck Live's connection to

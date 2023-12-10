@@ -8,7 +8,7 @@ import (
 	// "time"
 )
 
-// Type Display is part of the Loupedeck protocol, used to identify
+// Display is part of the Loupedeck protocol, used to identify
 // which of the displays on the Loupedeck to write to.
 type Display struct {
 	loupedeck        *Loupedeck
@@ -19,8 +19,8 @@ type Display struct {
 	bigEndian        bool
 }
 
-// Function GetDisplay returns a Display object with a given name if
-// it exists, otherwise it returns nil.
+// GetDisplay returns a Display object with a given name if it exists,
+// otherwise it returns nil.
 //
 // Traditional Loupedeck devices had 3 displays, Left, Center, and
 // Right.  Newer devices make all 3 look like a single display, and
@@ -56,6 +56,8 @@ func (l *Loupedeck) addDisplay(name string, id byte, width, height, offsetx, off
 	l.displays[name] = d
 }
 
+// SetDisplays configures the Loupdeck's displays based on the
+// hardware ID of the conencted device.
 func (l *Loupedeck) SetDisplays() {
 	switch l.Product {
 	case "0003":
@@ -87,16 +89,17 @@ func (l *Loupedeck) SetDisplays() {
 	}
 }
 
-// Function Height returns the height (in pixels) of the Loupedeck's displays.
+// Height returns the height (in pixels) of the Loupedeck's displays.
 func (d *Display) Height() int {
 	return d.height
 }
 
+// Width returns the width (in pixels) of the Loupedeck's displays.
 func (d *Display) Width() int {
 	return d.width
 }
 
-// Function Draw draws an image onto a specific display of the
+// Draw draws an image onto a specific display of the
 // Loupedeck Live.  The device has 3 seperate displays, the left
 // segment (by knobs 1-3), the right segment (by knobs 4-6) and the
 // main/center segment (underneath the 4x3 array of touch buttons).

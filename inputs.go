@@ -16,66 +16,95 @@
 
 package loupedeck
 
-// Type Button represents a physical button on the Loupedeck Live.
-// This includes the 8 buttons at the bottom of the device as well as
-// the 'click' function of the 6 dials.
+// Button represents a physical button on the Loupedeck Live.  This
+// includes the 8 buttons at the bottom of the device as well as the
+// 'click' function of the 6 dials.
 type Button uint16
 
 const (
+	// KnobPress1 is sent when the first knob (upper left) is clicked.
 	KnobPress1 Button = 1
+	// KnobPress2 is sent when the second knob (middle left) is clicked.
 	KnobPress2        = 2
+	// KnobPress3 is sent when the third knob (bottom left) is clicked.
 	KnobPress3        = 3
+	// KnobPress4 is sent when the fourth knob (upper right) is clicked.
 	KnobPress4        = 4
+	// KnobPress5 is sent when the fifth knob (middle right) is clicked.
 	KnobPress5        = 5
+	// KnobPress6 is sent when the sixth knob (middle right) is clicked.
 	KnobPress6        = 6
+	// Circle is sent when the left-most hardware button under the
+	// display is clicked.  This has a circle icon on the
+	// Loupedeck Live, but is unfortunately labeled "1" on the
+	// Loupedeck CT.
 	Circle            = 7
+	// Button1 is sent when the button to the right of the circle
+	// button is clicked.  This is labeled "1" on the Loupdeck
+	// live and "2" on the Loupedeck CT.
 	Button1           = 8
+	// Button2 is sent when the third button is clicked.
 	Button2           = 9
+	// Button3 is sent when the fourth button is clicked.
 	Button3           = 10
+	// Button4 is sent when the fifth button is clicked.
 	Button4           = 11
+	// Button5 is sent when the sixth button is clicked.
 	Button5           = 12
+	// Button6 is sent when the seventh button is clicked.
 	Button6           = 13
+	// Button7 is sent when the eighth (rightmost) button is clicked.
 	Button7           = 14
 )
 
-// Type ButtonStatus represents the state of Buttons.
+// ButtonStatus represents the state of Buttons.
 type ButtonStatus uint8
 
 const (
+	// ButtonDown indicates that a button has just been pressed.
 	ButtonDown ButtonStatus = 0
+	// ButtonUp indicates that a button was just released.
 	ButtonUp                = 1
 )
 
-// Type ButtonFunc is a function signature used for callbacks on
-// Button events.  When a specified event happens, the ButtonFunc is
-// called with parameters specifying which button was pushed and what
-// its current state is.
+// ButtonFunc is a function signature used for callbacks on Button
+// events.  When a specified event happens, the ButtonFunc is called
+// with parameters specifying which button was pushed and what its
+// current state is.
 type ButtonFunc func(Button, ButtonStatus)
 
-// Type Knob represents the 6 knobs on the Loupedeck Live.
+// Knob represents the 6 knobs on the Loupedeck Live.
 type Knob uint16
 
 const (
+	// Knob1 is the upper left knob.
 	Knob1 Knob = 1
+	// Knob2 is the middle left knob.
 	Knob2      = 2
+	// Knob3 is the bottom left knob.
 	Knob3      = 3
+	// Knob4 is the upper right knob.
 	Knob4      = 4
+	// Knob5 is the middle right knob.
 	Knob5      = 5
+	// Knob6 is the bottom right knob.
 	Knob6      = 6
 )
 
-// Type KnobFunc is a function signature used for callbacks on Knob
-// events, similar to ButtonFunc's use with Button events.  The exact
-// use of the second parameter depends on the use; in some cases it's
-// simply +1/-1 (for right/left button turns) and in other cases it's
-// the current value of the dial.
+// KnobFunc is a function signature used for callbacks on Knob events,
+// similar to ButtonFunc's use with Button events.  The exact use of
+// the second parameter depends on the use; in some cases it's simply
+// +1/-1 (for right/left button turns) and in other cases it's the
+// current value of the dial.
 type KnobFunc func(Knob, int)
 
-// Type TouchButton represents the regions of the touchpad on the Loupedeck Live.
+// TouchButton represents the regions of the touchpad on the Loupedeck Live.
 type TouchButton uint16
 
 const (
+	// TouchLeft indicates that the left touchscreen area, near the leftmost knobs has been touched.
 	TouchLeft  TouchButton = 1
+	// TouchRight indicates that hte right touchscreen area, near the rightmost knobs has been touched.
 	TouchRight             = 2
 	Touch1                 = 3
 	Touch2                 = 4
@@ -91,9 +120,8 @@ const (
 	Touch12                = 14
 )
 
-// Type TouchFunc is a function signature used for callbacks on
-// TouchButton events, similar to ButtonFunc and KnobFunc.  The
-// parameters are:
+// TouchFunc is a function signature used for callbacks on TouchButton
+// events, similar to ButtonFunc and KnobFunc.  The parameters are:
 //
 //   - The TouchButton touched
 //   - The ButtonStatus (down/up)
@@ -101,7 +129,7 @@ const (
 //   - The Y location touched (relative to the whole display)
 type TouchFunc func(TouchButton, ButtonStatus, uint16, uint16)
 
-// Function touchCoordToButton translates an x,y coordinate on the
+// touchCoordToButton translates an x,y coordinate on the
 // touchscreen to a TouchButton.
 func touchCoordToButton(x, y uint16) TouchButton {
 	switch {
@@ -118,35 +146,35 @@ func touchCoordToButton(x, y uint16) TouchButton {
 	return TouchButton(uint16(Touch1) + x + 4*y)
 }
 
-// Function BindButton sets a callback for actions on a specific
+// BindButton sets a callback for actions on a specific
 // button.  When the Button is pushed down, then the provided
 // ButtonFunc is called.
 func (l *Loupedeck) BindButton(b Button, f ButtonFunc) {
 	l.buttonBindings[b] = f
 }
 
-// Function BindButtonUp sets a callback for actions on a specific
+// BindButtonUp sets a callback for actions on a specific
 // button.  When the Button is released, then the provided
 // ButtonFunc is called.
 func (l *Loupedeck) BindButtonUp(b Button, f ButtonFunc) {
 	l.buttonUpBindings[b] = f
 }
 
-// Function BindKnob sets a callback for actions on a specific
+// BindKnob sets a callback for actions on a specific
 // knob.  When the Knob is turned then the provided
 // KnobFunc is called.
 func (l *Loupedeck) BindKnob(k Knob, f KnobFunc) {
 	l.knobBindings[k] = f
 }
 
-// Function BindTouch sets a callback for actions on a specific
+// BindTouch sets a callback for actions on a specific
 // TouchButton.  When the TouchButton is pushed down, then the
 // provided TouchFunc is called.
 func (l *Loupedeck) BindTouch(b TouchButton, f TouchFunc) {
 	l.touchBindings[b] = f
 }
 
-// Function BindTouchUp sets a callback for actions on a specific
+// BindTouchUp sets a callback for actions on a specific
 // TouchButton.  When the TouchButton is released, then the
 // provided TouchFunc is called.
 func (l *Loupedeck) BindTouchUp(b TouchButton, f TouchFunc) {

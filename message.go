@@ -7,7 +7,7 @@ import (
 	"time"
 )
 
-// Type MessageType is a uint16 used to identify various commands and
+// MessageType is a uint16 used to identify various commands and
 // actions needed for the Loupedeck protocol.
 type MessageType byte
 
@@ -29,7 +29,7 @@ const (
 	TouchEndCT                 = 0x72
 )
 
-// Type Message defines a message for communicating with the Loupedeck
+// Message defines a message for communicating with the Loupedeck
 // over USB.  All communication with the Loupedeck occurs via
 // Messages, but most application software can use higher-level
 // functions in this library and never touch messages directly.
@@ -43,7 +43,7 @@ type Message struct {
 	data          []byte
 }
 
-// Function NewMessage creates a new low-level Loupedeck message with
+// NewMessage creates a new low-level Loupedeck message with
 // a specified type and data.  This isn't generally needed for
 // end-use.
 func (l *Loupedeck) NewMessage(messageType MessageType, data []byte) *Message {
@@ -62,7 +62,7 @@ func (l *Loupedeck) NewMessage(messageType MessageType, data []byte) *Message {
 	return &m
 }
 
-// Function ParseMessage creates a Loupedeck Message from a block of
+// ParseMessage creates a Loupedeck Message from a block of
 // bytes.  This is used to decode incoming messages from a Loupedeck,
 // and shouldn't generally be needed outside of this library.
 func (l *Loupedeck) ParseMessage(b []byte) (*Message, error) {
@@ -98,7 +98,7 @@ func (m *Message) String() string {
 	return fmt.Sprintf("{len: %d, type: %02x, txn: %02x, data: %v}", m.length, m.messageType, m.transactionID, d)
 }
 
-// Function newTransactionId picks the next 8-bit transaction ID
+// newTransactionId picks the next 8-bit transaction ID
 // number.  This is used as part of the Loupedeck protocol and used to
 // match results with specific queries.  The transaction ID
 // incrememnts per call and rolls over back to 1 (not 0).
@@ -115,7 +115,7 @@ func (l *Loupedeck) newTransactionID() uint8 {
 	return t
 }
 
-// Function Send sends a message to the specified device.
+// Send sends a message to the specified device.
 func (l *Loupedeck) Send(m *Message) error {
 	slog.Info("Sending", "message", m.String())
 	l.transactionCallbacks[m.transactionID] = nil
@@ -123,13 +123,13 @@ func (l *Loupedeck) Send(m *Message) error {
 	return l.send(m)
 }
 
-// Function send sends a message to the specified device.
+// send sends a message to the specified device.
 func (l *Loupedeck) send(m *Message) error {
 	b := m.asBytes()
 	return l.conn.WriteMessage(websocket.BinaryMessage, b)
 }
 
-// Function SendWithCallback sends a message to the specified device
+// SendWithCallback sends a message to the specified device
 // and registers a callback.  When (or if) the Loupedeck sends a
 // response to the message, the callback function will be called and
 // provided with the response message.
@@ -140,7 +140,7 @@ func (l *Loupedeck) SendWithCallback(m *Message, c transactionCallback) error {
 	return l.send(m)
 }
 
-// function SendAndWait sends a message and then waits for a response, returning the response message.
+// SendAndWait sends a message and then waits for a response, returning the response message.
 func (l *Loupedeck) SendAndWait(m *Message, timeout time.Duration) (*Message, error) {
 	ch := make(chan *Message)
 	defer close(ch)

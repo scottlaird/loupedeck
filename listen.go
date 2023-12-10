@@ -6,7 +6,7 @@ import (
 	"log/slog"
 )
 
-// Function Listen waits for events from the Loupedeck and calls
+// Listen waits for events from the Loupedeck and calls
 // callbacks as configured.
 func (l *Loupedeck) Listen() {
 	slog.Info("Listening")

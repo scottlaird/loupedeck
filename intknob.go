@@ -16,7 +16,7 @@
 
 package loupedeck
 
-// Type IntKnob is an abstraction over the Loupedeck Live's Knobs.
+// IntKnob is an abstraction over the Loupedeck Live's Knobs.
 // The IntKnob turns left/right dial actions into incrememnting and
 // decrementing an integer within a specified range.  In addition, the
 // 'click' action of the knob resets the IntKnob's value to 0.
@@ -27,12 +27,12 @@ type IntKnob struct {
 	max        int
 }
 
-// Function Get returns the current value of the IntKnob.
+// Get returns the current value of the IntKnob.
 func (k *IntKnob) Get() int {
 	return k.watchedint.Get()
 }
 
-// Function Set sets the current value of the IntKnob, triggering any
+// Set sets the current value of the IntKnob, triggering any
 // callbacks set on the WatchedInt that underlies the IntKnob.
 func (k *IntKnob) Set(v int) {
 	if v < k.min {
@@ -44,7 +44,7 @@ func (k *IntKnob) Set(v int) {
 	k.watchedint.Set(v)
 }
 
-// Function Inc incremements (or decrements) the current value of the
+// Inc incremements (or decrements) the current value of the
 // IntKnob by a specified amount.  This triggers a callback on the
 // WatchedInt that underlies the IntKnob.
 func (k *IntKnob) Inc(v int) {
@@ -59,9 +59,6 @@ func (k *IntKnob) Inc(v int) {
 	k.watchedint.Set(x)
 }
 
-// Function NewIntKnob returns a new IntKnob object, already bound to the
-// specified Knob and ready to use.
-//
 // IntKnob implements a generic dial knob using the specified
 // Loupedeck Knob.  It binds the dial function of the knob to
 // increase/decrease the IntKnob's value and binds the button function

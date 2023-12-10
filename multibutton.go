@@ -21,7 +21,7 @@ import (
 	"image"
 )
 
-// Type MultiButton implements a multi-image touch button for the
+// MultiButton implements a multi-image touch button for the
 // Loupedeck Live that rotates between a set of images for each touch,
 // changing its value (and image) for each touch.  Once the last image
 // is touched, it loops back to the first image in the set.
@@ -34,7 +34,7 @@ type MultiButton struct {
 	x, y      int
 }
 
-// Function touchToXY turns a specific TouchButton into a set of x,y +
+// touchToXY turns a specific TouchButton into a set of x,y +
 // Display addresses, for use with the Draw function.
 func touchToXYMain(b TouchButton) (int, int) {
 	switch b {
@@ -67,7 +67,7 @@ func touchToXYMain(b TouchButton) (int, int) {
 	}
 }
 
-// Function NewMultiButton creates a new MultiButton, bound to an
+// NewMultiButton creates a new MultiButton, bound to an
 // existing WatchedInt.  One image.Image and value must be provided;
 // this is the first image (and default value) for the MultiButton.
 // Additional images and values can be added via the Add function.
@@ -98,18 +98,18 @@ func (l *Loupedeck) NewMultiButton(watchedint *WatchedInt, b TouchButton, im ima
 	return m
 }
 
-// Function Add adds an additional image+value to a MultiButton.
+// Add adds an additional image+value to a MultiButton.
 func (m *MultiButton) Add(im image.Image, value int) {
 	m.images = append(m.images, im)
 	m.values = append(m.values, value)
 }
 
-// Function Draw redraws the MultiButton on the Loupedeck live.
+// Draw redraws the MultiButton on the Loupedeck live.
 func (m *MultiButton) Draw() {
 	m.display.Draw(m.images[m.GetCur()], m.x, m.y)
 }
 
-// Function GetCur gets the current value of the MultiButton.  The
+// GetCur gets the current value of the MultiButton.  The
 // value returned will match one of the values from either
 // NewMultiButton or multibutton.Add, depending on which image is
 // currently displayed.
@@ -124,7 +124,7 @@ func (m *MultiButton) GetCur() int {
 	return 0
 }
 
-// Function Advance moves to the next value of the MultiButton,
+// Advance moves to the next value of the MultiButton,
 // updating the display and underlying WatchedInt.
 func (m *MultiButton) Advance() {
 	c := m.GetCur() + 1
