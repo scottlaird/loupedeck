@@ -144,7 +144,10 @@ func (d *Display) Draw(im image.Image, xoff, yoff int) {
 	}
 
 	m := d.loupedeck.NewMessage(WriteFramebuff, data)
-	d.loupedeck.Send(m)
+	err :=d.loupedeck.Send(m)
+	if err != nill {
+		slog.Warning("Send failed", "err", err)
+	}
 
 	// I'd love to watch the return code for WriteFramebuff, but
 	// it doesn't seem to come back until after Draw, below.
@@ -164,5 +167,8 @@ func (d *Display) Draw(im image.Image, xoff, yoff int) {
 	data2 := make([]byte, 2)
 	binary.BigEndian.PutUint16(data2[0:], uint16(d.id))
 	m2 := d.loupedeck.NewMessage(Draw, data2)
-	d.loupedeck.Send(m2)
+	err = d.loupedeck.Send(m2)
+	if err != nill {
+		slog.Warning("Send failed", "err", err)
+	}
 }

@@ -126,9 +126,7 @@ func (l *Loupedeck) Send(m *Message) error {
 // Function send sends a message to the specified device.
 func (l *Loupedeck) send(m *Message) error {
 	b := m.asBytes()
-	l.conn.WriteMessage(websocket.BinaryMessage, b)
-
-	return nil
+	return l.conn.WriteMessage(websocket.BinaryMessage, b)
 }
 
 // Function SendWithCallback sends a message to the specified device
@@ -147,13 +145,16 @@ func (l *Loupedeck) SendAndWait(m *Message, timeout time.Duration) (resp *Messag
 	ch := make(chan *Message)
 	defer close(ch)
 	// TODO(scottlaird): actually implement the timeout.
-	l.SendWithCallback(m, func(m2 *Message) {
+	err := l.SendWithCallback(m, func(m2 *Message) {
 		defer func() {
 			recover()
 		}()
 		slog.Info("sendAndWait callback received, sending to channel")
 		ch <- m2
 	})
+	if err != nil {
+		return nil, fmt.Errorf("Unable to send: %v", err)
+	}
 
 	// Trying SendAndWait with Draw() usually fails, because it
 	// doesn't get a response back until after the following

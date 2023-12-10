@@ -133,16 +133,22 @@ func doConnect(c *SerialWebSockConn) (*Loupedeck, error) {
 	// `listen()` hasn't been called yet, we *have* to use
 	// callbacks, blocking via 'sendAndWait' isn't going to work.
 	m = l.NewMessage(Version, data)
-	l.SendWithCallback(m, func(m *Message) {
+	err = l.SendWithCallback(m, func(m *Message) {
 		l.Version = fmt.Sprintf("%d.%d.%d", m.data[0], m.data[1], m.data[2])
 		slog.Info("Received 'Version' response", "version", l.Version)
 	})
+	if err != nil {
+		return nil, fmt.Errorf("Unable to send: %v", err)
+	}
 
 	m = l.NewMessage(Serial, data)
-	l.SendWithCallback(m, func(m *Message) {
+	err = l.SendWithCallback(m, func(m *Message) {
 		l.SerialNo = string(m.data)
 		slog.Info("Received 'Serial' response", "serial", l.SerialNo)
 	})
+	if err != nil {
+		return nil, fmt.Errorf("Unable to send: %v", err)
+	}
 
 	return l, nil
 }
