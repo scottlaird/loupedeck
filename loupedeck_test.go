@@ -34,7 +34,7 @@ func Example() {
 	light3 := loupedeck.NewWatchedInt(0)
 	light3.AddWatcher(func(i int) { fmt.Printf("DMX 5->%d\n", i) })
 
-	l.NewTouchDial(loupedeck.DisplayLeft, light1, light2, light3, 0, 100)
+	l.NewTouchDial(l.GetDisplay("left"), light1, light2, light3, 0, 100)
 
 	// Define the 'Circle' button (bottom left) to function as an "off" button.
 	l.BindButton(loupedeck.Circle, func(b loupedeck.Button, s loupedeck.ButtonStatus) {
