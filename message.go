@@ -141,7 +141,7 @@ func (l *Loupedeck) SendWithCallback(m *Message, c transactionCallback) error {
 }
 
 // function SendAndWait sends a message and then waits for a response, returning the response message.
-func (l *Loupedeck) SendAndWait(m *Message, timeout time.Duration) (resp *Message, err error) {
+func (l *Loupedeck) SendAndWait(m *Message, timeout time.Duration) (*Message, error) {
 	ch := make(chan *Message)
 	defer close(ch)
 	// TODO(scottlaird): actually implement the timeout.
@@ -167,8 +167,9 @@ func (l *Loupedeck) SendAndWait(m *Message, timeout time.Duration) (resp *Messag
 	//	err = l.conn.WriteControl(websocket.PingMessage, []byte{}, time.Now().Add(time.Second))
 	//	slog.Info("Ping send", "err", err)
 
+
 	select {
-	case resp = <-ch:
+	case resp := <-ch:
 		slog.Info("sendAndWait received ok")
 		return resp, nil
 	case <-time.After(timeout):
