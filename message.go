@@ -147,7 +147,7 @@ func (l *Loupedeck) SendAndWait(m *Message, timeout time.Duration) (*Message, er
 	// TODO(scottlaird): actually implement the timeout.
 	err := l.SendWithCallback(m, func(m2 *Message) {
 		defer func() {
-			recover()
+			_ = recover()
 		}()
 		slog.Info("sendAndWait callback received, sending to channel")
 		ch <- m2
