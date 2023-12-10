@@ -59,7 +59,7 @@ func (k *IntKnob) Inc(v int) {
 	k.watchedint.Set(x)
 }
 
-// Function IntKnob returns a new IntKnob object, already bound to the
+// Function NewIntKnob returns a new IntKnob object, already bound to the
 // specified Knob and ready to use.
 //
 // IntKnob implements a generic dial knob using the specified
