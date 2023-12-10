@@ -14,19 +14,19 @@ type MessageType byte
 // See 'COMMANDS' in https://github.com/foxxyz/loupedeck/blob/master/constants.js
 const (
 	ButtonPress    MessageType = 0x00
-	KnobRotate                 = 0x01
-	SetColor                   = 0x02
-	Serial                     = 0x03
-	Reset                      = 0x06
-	Version                    = 0x07
-	SetBrightness              = 0x09
-	MCU                        = 0x0d
-	Draw                       = 0x0f
-	WriteFramebuff             = 0x10
-	SetVibration               = 0x1b
-	Touch                      = 0x4d
-	TouchEnd                   = 0x6d
-	TouchEndCT                 = 0x72
+	KnobRotate     MessageType = 0x01
+	SetColor       MessageType = 0x02
+	Serial         MessageType = 0x03
+	Reset          MessageType = 0x06
+	Version        MessageType = 0x07
+	SetBrightness  MessageType = 0x09
+	MCU            MessageType = 0x0d
+	Draw           MessageType = 0x0f
+	WriteFramebuff MessageType = 0x10
+	SetVibration   MessageType = 0x1b
+	Touch          MessageType = 0x4d
+	TouchEnd       MessageType = 0x6d
+	TouchEndCT     MessageType = 0x72
 )
 
 // Message defines a message for communicating with the Loupedeck
@@ -166,7 +166,6 @@ func (l *Loupedeck) SendAndWait(m *Message, timeout time.Duration) (*Message, er
 	//	slog.Info("Sending ping.")
 	//	err = l.conn.WriteControl(websocket.PingMessage, []byte{}, time.Now().Add(time.Second))
 	//	slog.Info("Ping send", "err", err)
-
 
 	select {
 	case resp := <-ch:

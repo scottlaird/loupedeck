@@ -19,22 +19,6 @@ import (
 	"time"
 )
 
-func buttontest(b loupedeck.Button, s loupedeck.ButtonStatus) {
-	switch s {
-	case loupedeck.ButtonDown:
-		fmt.Printf("Received button %x DOWN\n", b)
-	case loupedeck.ButtonUp:
-		fmt.Printf("Received button %x UP\n", b)
-	default:
-		fmt.Printf("Received button %x UNKNOWN STATE\n", b)
-	}
-
-}
-
-func knobtest(k loupedeck.Knob, v int) {
-	fmt.Printf("Received knob %x %d\n", k, v)
-}
-
 func main() {
 	// Right now, the Loupedeck doesn't always respond if the
 	// previous run didn't shut down correctly.  Unsure why yet.
@@ -64,13 +48,13 @@ func main() {
 
 	go func() {
 		time.Sleep(2 * time.Second)
-		l.SetButtonColor(loupedeck.Circle, color.RGBA{255, 0, 0, 255})      // This doesn't seem to "stick".  Not sure why.
-		l.SetButtonColor(loupedeck.Button1, color.RGBA{8, 8, 8, 255})       // This doesn't seem to "stick".  Not sure why.
-		l.SetButtonColor(loupedeck.Button2, color.RGBA{16, 16, 16, 255})    // This doesn't seem to "stick".  Not sure why.
-		l.SetButtonColor(loupedeck.Button3, color.RGBA{32, 32, 32, 255})    // This doesn't seem to "stick".  Not sure why.
-		l.SetButtonColor(loupedeck.Button4, color.RGBA{64, 64, 64, 255})    // This doesn't seem to "stick".  Not sure why.
-		l.SetButtonColor(loupedeck.Button5, color.RGBA{128, 128, 128, 255}) // This doesn't seem to "stick".  Not sure why.
-		l.SetButtonColor(loupedeck.Button6, color.RGBA{255, 255, 255, 255}) // This doesn't seem to "stick".  Not sure why.
+		_ = l.SetButtonColor(loupedeck.Circle, color.RGBA{255, 0, 0, 255})      // This doesn't seem to "stick".  Not sure why.
+		_ = l.SetButtonColor(loupedeck.Button1, color.RGBA{8, 8, 8, 255})       // This doesn't seem to "stick".  Not sure why.
+		_ = l.SetButtonColor(loupedeck.Button2, color.RGBA{16, 16, 16, 255})    // This doesn't seem to "stick".  Not sure why.
+		_ = l.SetButtonColor(loupedeck.Button3, color.RGBA{32, 32, 32, 255})    // This doesn't seem to "stick".  Not sure why.
+		_ = l.SetButtonColor(loupedeck.Button4, color.RGBA{64, 64, 64, 255})    // This doesn't seem to "stick".  Not sure why.
+		_ = l.SetButtonColor(loupedeck.Button5, color.RGBA{128, 128, 128, 255}) // This doesn't seem to "stick".  Not sure why.
+		_ = l.SetButtonColor(loupedeck.Button6, color.RGBA{255, 255, 255, 255}) // This doesn't seem to "stick".  Not sure why.
 	}()
 
 	w1 := loupedeck.NewWatchedInt(0)

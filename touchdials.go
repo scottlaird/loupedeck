@@ -117,7 +117,7 @@ func drawRightJustifiedStringAt(fd font.Drawer, s string, x, y int) {
 func (t *TouchDial) Draw() {
 	im := image.NewRGBA(image.Rect(0, 0, 60, 270))
 	bg := color.RGBA{0, 0, 0, 255}
-	draw.Draw(im, im.Bounds(), &image.Uniform{bg}, image.ZP, draw.Src)
+	draw.Draw(im, im.Bounds(), &image.Uniform{bg}, image.Point{}, draw.Src)
 
 	fd := t.loupedeck.FontDrawer()
 	fd.Dst = im

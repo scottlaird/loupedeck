@@ -91,7 +91,7 @@ func (l *Loupedeck) Face() font.Face {
 // The font size used will be chosen to maximize the size of the text.
 func (l *Loupedeck) TextInBox(x, y int, s string, fg, bg color.Color) (image.Image, error) {
 	im := image.NewRGBA(image.Rect(0, 0, x, y))
-	draw.Draw(im, im.Bounds(), &image.Uniform{bg}, image.ZP, draw.Src)
+	draw.Draw(im, im.Bounds(), &image.Uniform{bg}, image.Point{}, draw.Src)
 
 	fd := l.FontDrawer()
 	fd.Src = &image.Uniform{fg}
