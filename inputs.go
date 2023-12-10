@@ -23,43 +23,42 @@ type Button uint16
 
 const (
 	KnobPress1 Button = 1
-	KnobPress2        = 2
-	KnobPress3        = 3
-	KnobPress4        = 4
-	KnobPress5        = 5
-	KnobPress6        = 6
+	KnobPress2 Button = 2
+	KnobPress3 Button = 3
+	KnobPress4 Button = 4
+	KnobPress5 Button = 5
+	KnobPress6 Button = 6
 
 	// Circle is sent when the left-most hardware button under the
 	// display is clicked.  This has a circle icon on the
 	// Loupedeck Live, but is unfortunately labeled "1" on the
 	// Loupedeck CT.
-	Circle            = 7
-	Button1           = 8
-	Button2           = 9
-	Button3           = 10
-	Button4           = 11
-	Button5           = 12
-	Button6           = 13
-	Button7           = 14
+	Circle  Button = 7
+	Button1 Button = 8
+	Button2 Button = 9
+	Button3 Button = 10
+	Button4 Button = 11
+	Button5 Button = 12
+	Button6 Button = 13
+	Button7 Button = 14
 
 	// CT-specific buttons.
-	CTCircle = 15
-	Undo = 16
-	Keyboard = 17
-	Enter = 18
-	Save = 19
-	LeftFn = 20
-	Up = 21
-	A = 21
-	Left = 22
-	C = 22
-	RightFn = 23
-	Down = 24
-	B = 24
-	Right = 25
-	D = 25
-	E = 26
-	
+	CTCircle Button = 15
+	Undo     Button = 16
+	Keyboard Button = 17
+	Enter    Button = 18
+	Save     Button = 19
+	LeftFn   Button = 20
+	Up       Button = 21
+	A        Button = 21
+	Left     Button = 22
+	C        Button = 22
+	RightFn  Button = 23
+	Down     Button = 24
+	B        Button = 24
+	Right    Button = 25
+	D        Button = 25
+	E        Button = 26
 )
 
 // ButtonStatus represents the state of Buttons.
@@ -69,7 +68,7 @@ const (
 	// ButtonDown indicates that a button has just been pressed.
 	ButtonDown ButtonStatus = 0
 	// ButtonUp indicates that a button was just released.
-	ButtonUp                = 1
+	ButtonUp = 1
 )
 
 // ButtonFunc is a function signature used for callbacks on Button
@@ -87,15 +86,15 @@ const (
 	// Knob1 is the upper left knob.
 	Knob1 = 1
 	// Knob2 is the middle left knob.
-	Knob2      = 2
+	Knob2 = 2
 	// Knob3 is the bottom left knob.
-	Knob3      = 3
+	Knob3 = 3
 	// Knob4 is the upper right knob.
-	Knob4      = 4
+	Knob4 = 4
 	// Knob5 is the middle right knob.
-	Knob5      = 5
+	Knob5 = 5
 	// Knob6 is the bottom right knob.
-	Knob6      = 6
+	Knob6 = 6
 )
 
 // KnobFunc is a function signature used for callbacks on Knob events,
@@ -110,21 +109,21 @@ type TouchButton uint16
 
 const (
 	// TouchLeft indicates that the left touchscreen area, near the leftmost knobs has been touched.
-	TouchLeft  TouchButton = 1
+	TouchLeft TouchButton = 1
 	// TouchRight indicates that hte right touchscreen area, near the rightmost knobs has been touched.
-	TouchRight             = 2
-	Touch1                 = 3
-	Touch2                 = 4
-	Touch3                 = 5
-	Touch4                 = 6
-	Touch5                 = 7
-	Touch6                 = 8
-	Touch7                 = 9
-	Touch8                 = 10
-	Touch9                 = 11
-	Touch10                = 12
-	Touch11                = 13
-	Touch12                = 14
+	TouchRight = 2
+	Touch1     = 3
+	Touch2     = 4
+	Touch3     = 5
+	Touch4     = 6
+	Touch5     = 7
+	Touch6     = 8
+	Touch7     = 9
+	Touch8     = 10
+	Touch9     = 11
+	Touch10    = 12
+	Touch11    = 13
+	Touch12    = 14
 )
 
 // TouchFunc is a function signature used for callbacks on TouchButton
