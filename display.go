@@ -147,7 +147,7 @@ func (d *Display) Draw(im image.Image, xoff, yoff int) {
 	}
 
 	m := d.loupedeck.NewMessage(WriteFramebuff, data)
-	err :=d.loupedeck.Send(m)
+	err := d.loupedeck.Send(m)
 	if err != nil {
 		slog.Warn("Send failed", "err", err)
 	}

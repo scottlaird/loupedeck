@@ -10,7 +10,6 @@ import (
 	"time"
 )
 
-
 // SerialWebSockConn implements an external dialer interface for the
 // Gorilla that allows it to talk to Loupedeck's weird
 // websockets-over-serial-over-USB setup.
