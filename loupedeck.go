@@ -28,16 +28,19 @@
 package loupedeck
 
 import (
+	"image"
+	"image/color"
+	"image/draw"
+
 	"github.com/gorilla/websocket"
 	"golang.org/x/image/font"
 	"golang.org/x/image/font/gofont/goregular"
 	"golang.org/x/image/font/opentype"
 	"golang.org/x/image/math/fixed"
-	"image"
-	"image/color"
-	"image/draw"
+
 	//	"log/slog"
 	"sync"
+	"time"
 )
 
 type transactionCallback func(m *Message)
@@ -59,10 +62,16 @@ type Loupedeck struct {
 	knobBindings         map[Knob]KnobFunc
 	touchBindings        map[TouchButton]TouchFunc
 	touchUpBindings      map[TouchButton]TouchFunc
+	touchDKBindings      TouchDKFunc
+	dragDKBinding        DragDisplayKnobFunc
 	transactionID        uint8
 	transactionMutex     sync.Mutex
 	transactionCallbacks map[byte]transactionCallback
 	displays             map[string]*Display
+	dragDKStarted        bool
+	dragDKStartX         uint16
+	dragDKStartY         uint16
+	dragDKStartTime      time.Time
 }
 
 // Close closes the connection to the Loupedeck.

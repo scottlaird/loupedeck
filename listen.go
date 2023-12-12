@@ -2,8 +2,9 @@ package loupedeck
 
 import (
 	"encoding/binary"
-	"github.com/gorilla/websocket"
 	"log/slog"
+
+	"github.com/gorilla/websocket"
 )
 
 // Listen waits for events from the Loupedeck and calls
@@ -75,7 +76,8 @@ func (l *Loupedeck) Listen() {
 				} else {
 					slog.Debug("Received touch message", "x", x, "y", y, "id", id, "b", b, "message", message)
 				}
-			case TouchEndCT, TouchEnd:
+
+			case TouchEnd:
 				x := binary.BigEndian.Uint16(message[4:])
 				y := binary.BigEndian.Uint16(message[6:])
 				id := message[8] // Not sure what this is for
@@ -85,6 +87,24 @@ func (l *Loupedeck) Listen() {
 					l.touchUpBindings[b](b, ButtonUp, x, y)
 				} else {
 					slog.Debug("Received touch end message", "x", x, "y", y, "id", id, "b", b, "message", message)
+				}
+			case TouchCT:
+				x := binary.BigEndian.Uint16(message[4:])
+				y := binary.BigEndian.Uint16(message[6:])
+				id := message[8] // Not sure what this is for
+				slog.Debug("Received CT touch message", "x", x, "y", y, "id", id, "message", message)
+
+				if l.touchDKBindings != nil {
+					l.touchDKBindings(ButtonDown, x, y)
+				}
+			case TouchEndCT:
+				x := binary.BigEndian.Uint16(message[4:])
+				y := binary.BigEndian.Uint16(message[6:])
+				id := message[8] // Not sure what this is for
+				slog.Debug("Received CT touch message", "x", x, "y", y, "id", id, "message", message)
+
+				if l.touchDKBindings != nil {
+					l.touchDKBindings(ButtonUp, x, y)
 				}
 			default:
 				slog.Info("Received unknown message", "message", m.String())

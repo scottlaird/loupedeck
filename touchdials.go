@@ -17,13 +17,14 @@
 package loupedeck
 
 import (
-	"golang.org/x/image/font"
-	"golang.org/x/image/math/fixed"
 	"image"
 	"image/color"
 	"image/draw"
 	"log/slog"
 	"strconv"
+
+	"golang.org/x/image/font"
+	"golang.org/x/image/math/fixed"
 )
 
 // TouchDial implements a "smart" bank of dials for the Loupedeck
@@ -110,6 +111,18 @@ func drawRightJustifiedStringAt(fd font.Drawer, s string, x, y int) {
 	slog.Info("Right justifying", "x", x, "y", y, "x26", x26, "y26", y26, "width", width)
 
 	fd.Dot = fixed.Point26_6{X: x26 - width, Y: y26}
+	fd.DrawString(s)
+}
+
+func drawCenteredStringAt(fd font.Drawer, s string, x, y int) {
+	bounds, _ := fd.BoundString(s)
+	width := bounds.Max.X - bounds.Min.X
+	x26 := fixed.I(x)
+	y26 := fixed.I(y)
+
+	slog.Info("Right justifying", "x", x, "y", y, "x26", x26, "y26", y26, "width", width)
+
+	fd.Dot = fixed.Point26_6{X: x26 - width/2, Y: y26}
 	fd.DrawString(s)
 }
 

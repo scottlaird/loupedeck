@@ -1,8 +1,9 @@
 # Release binary
 loupetest
 displayknob
+draw
 
 # Emacs temp files
 \#*\#
-\#*
+.\#*
 *~
